@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment files
+.env
+.env.local
+backend/config/.env
+backend/.env
+
+# Mobile and service credentials
+frontend/google-services.json
+frontend/android/app/google-services.json
+frontend/android/app/debug.keystore
+backend/*firebase-adminsdk*.json
+
+# Build outputs
+*.apk
+*.aab
+*.ipa
+build/
+dist/
+
+# Expo
+.expo/
+web-build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.frontend-git-backup/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp

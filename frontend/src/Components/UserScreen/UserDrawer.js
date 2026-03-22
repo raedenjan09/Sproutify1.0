@@ -1,0 +1,541 @@
+// Sproutify/frontend/src/Components/UserScreen/UserDrawer.js
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  Modal,
+  TouchableWithoutFeedback,
+  Alert,
+  Platform,
+  StatusBar
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { getUser, logout } from '../../utils/helper';
+
+const THEME = {
+  colors: {
+    bg: '#F5F3EE',
+    surface: '#FFFFFF',
+    surfaceAlt: '#F0F6F0',
+    text: '#1F2A1F',
+    muted: '#6B7C6A',
+    border: '#E6E0D9',
+    accentDark: '#1B5E20',
+    danger: '#C62828',
+  },
+  radius: {
+    md: 16,
+    lg: 20,
+    pill: 999,
+  },
+};
+
+const UserDrawer = ({ children }) => {
+  const navigation = useNavigation();
+  const route = useRoute();
+  
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState('Home');
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  
+  const slideAnim = useRef(new Animated.Value(-300)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Keep bottom-nav active state aligned to current screen
+  useEffect(() => {
+    const routeToTab = {
+      Home: 'Home',
+      Cart: 'Cart',
+      Notifications: 'Notifications',
+      OrderNotification: 'Notifications',
+      ProductNotification: 'Notifications',
+      Profile: 'Menu',
+      ChangePassword: 'Menu',
+      OrderHistory: 'Menu',
+      OrderDetails: 'Menu',
+    };
+
+    const nextTab = routeToTab[route.name];
+    if (nextTab) setActiveTab(nextTab);
+  }, [route.name]);
+
+  const loadUserData = async () => {
+    try {
+      setLoading(true);
+      const userData = await getUser();
+      setUser(userData);
+    } catch (error) {
+      console.error('Error loading user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showDrawer = useCallback(() => {
+    setDrawerVisible(true);
+    loadUserData();
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
+
+  const hideDrawer = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: -300,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setDrawerVisible(false);
+      setUser(null);
+    });
+  }, [fadeAnim, slideAnim]);
+
+  const handleLogout = useCallback(async () => {
+    hideDrawer();
+    
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Logout",
+          onPress: async () => {
+            try {
+              await logout();
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          },
+          style: "destructive"
+        }
+      ]
+    );
+  }, [hideDrawer, navigation]);
+
+  const handleNavigation = useCallback((screenName) => {
+    hideDrawer();
+
+    // Handle alias routes from tab/drawer
+    if (screenName === 'Orders') {
+      setActiveTab('Menu');
+      navigation.navigate('OrderHistory');
+      return;
+    }
+
+    if (screenName === 'Notifications') {
+      setActiveTab('Notifications');
+      navigation.navigate('OrderNotification');
+      return;
+    }
+
+    setActiveTab(screenName === 'Profile' ? 'Menu' : screenName);
+
+    try {
+      navigation.navigate(screenName);
+    } catch (error) {
+      console.log(`Navigation to ${screenName} failed:`, error);
+      Alert.alert('Error', `Cannot navigate to ${screenName}`);
+    }
+  }, [hideDrawer, navigation]);
+
+  const drawerItems = [
+    {
+      id: 'orders',
+      label: 'My Orders',
+      icon: 'receipt-outline',
+      activeIcon: 'receipt',
+      color: THEME.colors.accentDark,
+      screen: 'Orders'  // This will be mapped to OrderHistory in handleNavigation
+    },
+    {
+      id: 'profile',
+      label: 'Profile',
+      icon: 'person-outline',
+      activeIcon: 'person',
+      color: THEME.colors.accentDark,
+      screen: 'Profile'
+    },
+    {
+      id: 'logout',
+      label: 'Logout',
+      icon: 'log-out-outline',
+      activeIcon: 'log-out',
+      color: THEME.colors.danger,
+      isLogout: true
+    },
+  ];
+
+  const tabs = [
+    {
+      id: 'home',
+      label: 'Home',
+      icon: 'home-outline',
+      activeIcon: 'home',
+      screen: 'Home'
+    },
+    {
+      id: 'cart',
+      label: 'Cart',
+      icon: 'cart-outline',
+      activeIcon: 'cart',
+      screen: 'Cart'
+    },
+    {
+      id: 'notifications',
+      label: 'Notifications',
+      icon: 'notifications-outline',
+      activeIcon: 'notifications',
+      screen: 'Notifications'
+    },
+    {
+      id: 'menu',
+      label: 'Menu',
+      icon: 'menu-outline',
+      activeIcon: 'menu',
+      screen: 'Menu',
+      isMenu: true
+    },
+  ];
+
+  const renderTab = useCallback((tab) => {
+    const isActive = activeTab === tab.screen;
+    const isMenuTab = tab.isMenu;
+
+    return (
+      <TouchableOpacity
+        key={tab.id}
+        style={[styles.tabItem, isActive && styles.tabItemActive]}
+        onPress={() => isMenuTab ? showDrawer() : handleNavigation(tab.screen)}
+        activeOpacity={0.82}
+        accessibilityLabel={`${tab.label} tab`}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: isActive }}
+      >
+        <View style={styles.iconContainer}>
+          <Ionicons
+            name={isActive ? tab.activeIcon : tab.icon}
+            size={20}
+            color={isActive ? THEME.colors.text : THEME.colors.muted}
+          />
+        </View>
+        <Text style={[styles.tabLabel, isActive && styles.activeTabLabel]}>
+          {tab.label}
+        </Text>
+      </TouchableOpacity>
+    );
+  }, [activeTab, showDrawer, handleNavigation]);
+
+  const renderDrawerItem = useCallback((item) => {
+    const handlePress = () => {
+      if (item.isLogout) {
+        handleLogout();
+      } else {
+        handleNavigation(item.screen);
+      }
+    };
+
+    return (
+      <TouchableOpacity
+        key={item.id}
+        style={styles.drawerItem}
+        onPress={handlePress}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.drawerIconContainer, { backgroundColor: `${item.color}15` }]}>
+          <Ionicons
+            name={item.icon}
+            size={22}
+            color={item.color}
+          />
+        </View>
+        <Text style={[styles.drawerItemText, { color: item.color }]}>
+          {item.label}
+        </Text>
+        {!item.isLogout && (
+          <Ionicons name="chevron-forward" size={18} color="#999" />
+        )}
+      </TouchableOpacity>
+    );
+  }, [handleNavigation, handleLogout]);
+
+  const getUserInitials = () => {
+    if (!user?.name) return 'U';
+    const names = user.name.split(' ');
+    if (names.length >= 2) {
+      return `${names[0][0]}${names[1][0]}`.toUpperCase();
+    }
+    return names[0][0].toUpperCase();
+  };
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar backgroundColor={THEME.colors.surface} barStyle="dark-content" />
+      
+      {/* Main Content */}
+      <View style={styles.content}>
+        <View style={styles.childContent}>
+          {children}
+        </View>
+
+        {/* Bottom Tab Bar */}
+        <View style={styles.tabBarContainer}>
+          <View style={styles.tabBar}>
+            {tabs.map(renderTab)}
+          </View>
+        </View>
+      </View>
+
+      {/* Drawer Modal */}
+      <Modal
+        transparent={true}
+        visible={drawerVisible}
+        onRequestClose={hideDrawer}
+        animationType="none"
+      >
+        <TouchableWithoutFeedback onPress={hideDrawer}>
+          <Animated.View style={[styles.drawerOverlay, { opacity: fadeAnim }]}>
+            <TouchableWithoutFeedback>
+              <Animated.View
+                style={[
+                  styles.drawerContainer,
+                  { transform: [{ translateX: slideAnim }] }
+                ]}
+              >
+                {/* Drawer Header */}
+                <View style={styles.drawerHeader}>
+                  <View style={styles.userInfo}>
+                    <View style={styles.avatar}>
+                      {loading ? (
+                        <Text style={styles.avatarText}>...</Text>
+                      ) : (
+                        <Text style={styles.avatarText}>{getUserInitials()}</Text>
+                      )}
+                    </View>
+                    <View style={styles.userDetails}>
+                      {loading ? (
+                        <>
+                          <Text style={styles.userName}>Loading...</Text>
+                          <Text style={styles.userEmail}>Please wait</Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={styles.userName}>{user?.name || 'User'}</Text>
+                          <Text style={styles.userEmail}>{user?.email || 'user@email.com'}</Text>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                  <TouchableOpacity onPress={hideDrawer} style={styles.closeButton}>
+                    <Ionicons name="close" size={24} color="#666" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Drawer Items */}
+                <View style={styles.drawerItems}>
+                  {drawerItems.map(renderDrawerItem)}
+                </View>
+
+                {/* Drawer Footer */}
+                <View style={styles.drawerFooter}>
+                  <Text style={styles.appVersion}>Sproutify v1.0.0</Text>
+                </View>
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </Animated.View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: THEME.colors.surface,
+  },
+  content: {
+    flex: 1,
+    backgroundColor: THEME.colors.bg,
+  },
+  childContent: {
+    flex: 1,
+  },
+  tabBarContainer: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 14,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 18 : 12,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.radius.lg,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  tabItem: {
+    minHeight: 46,
+    borderRadius: THEME.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    paddingVertical: 6,
+  },
+  tabItemActive: {
+    backgroundColor: THEME.colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+  },
+  iconContainer: {
+    position: 'relative',
+  },
+  tabLabel: {
+    fontSize: 11,
+    marginTop: 3,
+    color: THEME.colors.muted,
+    fontWeight: '600',
+  },
+  activeTabLabel: {
+    color: THEME.colors.text,
+    fontWeight: '700',
+  },
+  drawerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  drawerContainer: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 280,
+    backgroundColor: THEME.colors.surface,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 2, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.border,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: THEME.colors.text,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  userDetails: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.colors.text,
+    marginBottom: 2,
+  },
+  userEmail: {
+    fontSize: 12,
+    color: THEME.colors.muted,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  drawerItems: {
+    flex: 1,
+    paddingTop: 16,
+  },
+  drawerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1ECE4',
+  },
+  drawerIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  drawerItemText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  drawerFooter: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.border,
+  },
+  appVersion: {
+    fontSize: 12,
+    color: THEME.colors.muted,
+    textAlign: 'center',
+  },
+});
+
+export default UserDrawer;

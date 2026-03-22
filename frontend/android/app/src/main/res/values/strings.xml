@@ -1,0 +1,8 @@
+<resources>
+  <string name="app_name">Sproutify</string>
+  <string name="expo_splash_screen_resize_mode" translatable="false">contain</string>
+  <string name="expo_splash_screen_status_bar_translucent" translatable="false">false</string>
+  <string name="facebook_app_id">2740236896335198</string>
+  <string name="facebook_client_token">37d7dfcdff790ad0dd98c245a6d9aac0</string>
+  <string name="fb_login_protocol_scheme">fb2740236896335198</string>
+</resources>
