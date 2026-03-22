@@ -8,14 +8,18 @@ import AppNavigator from './src/Components/Navigation/AppNavigator';
 import { getToken } from './src/utils/helper';
 import * as SplashScreen from 'expo-splash-screen';
 
+const notificationsEnabled = Platform.OS !== 'web';
+
 // Configure notification handler for foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+if (notificationsEnabled) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    }),
+  });
+}
 
 // Keep splash screen visible while we initialize
 SplashScreen.preventAutoHideAsync();
@@ -29,8 +33,9 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
-        // Initialize notifications
-        await setupNotifications();
+        if (notificationsEnabled) {
+          await setupNotifications();
+        }
         
         // Add any other initialization here
         
@@ -44,20 +49,28 @@ export default function App() {
 
     prepare();
 
-    // Setup notification listeners
-    setupNotificationListeners();
+    if (notificationsEnabled) {
+      // Setup notification listeners
+      setupNotificationListeners();
+    }
 
     // Handle app state changes
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    const subscription = notificationsEnabled
+      ? AppState.addEventListener('change', handleAppStateChange)
+      : null;
 
     // Cleanup on unmount
     return () => {
       cleanupNotificationListeners();
-      subscription.remove();
+      subscription?.remove();
     };
   }, []);
 
   const setupNotifications = async () => {
+    if (!notificationsEnabled) {
+      return;
+    }
+
     try {
       // Set up Android notification channel
       if (Platform.OS === 'android') {
@@ -101,6 +114,10 @@ export default function App() {
   };
 
   const setupNotificationListeners = () => {
+    if (!notificationsEnabled) {
+      return;
+    }
+
     // Listener for notifications received while app is foregrounded
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       console.log('🔔 Notification received in foreground:', notification);

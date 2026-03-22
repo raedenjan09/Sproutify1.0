@@ -13,7 +13,11 @@ const {
   verifyEmail,
   savePushToken,
   removePushToken,
-  getPushToken
+  getPushToken,
+  getUserNotifications,
+  markNotificationsAsRead,
+  deleteNotification,
+  clearNotifications
 } = require('../controllers/User');
 
 const { isAuthenticatedUser } = require('../middlewares/auth');
@@ -53,6 +57,10 @@ router.get('/verify-email/:token', verifyEmail);
 router.post('/push-token', isAuthenticatedUser, savePushToken);
 router.delete('/push-token', isAuthenticatedUser, removePushToken);
 router.get('/push-token', isAuthenticatedUser, getPushToken);
+router.get('/notifications', isAuthenticatedUser, getUserNotifications);
+router.put('/notifications/read', isAuthenticatedUser, markNotificationsAsRead);
+router.delete('/notifications', isAuthenticatedUser, clearNotifications);
+router.delete('/notifications/:id', isAuthenticatedUser, deleteNotification);
 
 
 module.exports = router;

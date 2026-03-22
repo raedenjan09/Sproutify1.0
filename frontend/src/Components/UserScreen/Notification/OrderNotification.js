@@ -11,6 +11,7 @@ import {
   Platform,
   RefreshControl,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
@@ -18,21 +19,26 @@ import Constants from 'expo-constants';
 import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getToken } from '../../../utils/helper';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const getExpoProjectId = () =>
+  Constants.easConfig?.projectId ||
+  Constants.expoConfig?.extra?.eas?.projectId ||
+  Constants.expoConfig?.projectId ||
+  null;
 
 // Configure notification handler for foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
-
-const STORAGE_KEY = '@order_notifications';
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    }),
+  });
+}
 
 export default function OrderNotification() {
   const navigation = useNavigation();
@@ -49,9 +55,8 @@ export default function OrderNotification() {
 
   // Load saved notifications on mount
   useEffect(() => {
-    loadSavedNotifications();
+    fetchNotifications();
     checkTokenStatus();
-    checkStoredToken();
     setupNotificationListeners();
 
     // Handle app state changes (background/foreground)
@@ -66,7 +71,7 @@ export default function OrderNotification() {
   // Refresh when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      loadSavedNotifications();
+      fetchNotifications();
       checkTokenStatus();
     }, [])
   );
@@ -75,7 +80,7 @@ export default function OrderNotification() {
     if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
       // App came to foreground
       console.log('App came to foreground');
-      loadSavedNotifications();
+      fetchNotifications();
       checkTokenStatus();
     }
     appState.current = nextAppState;
@@ -85,12 +90,13 @@ export default function OrderNotification() {
     // Listen for notifications while app is foregrounded
     notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
       console.log('📱 Notification received in foreground:', notification);
-      handleNewNotification(notification);
+      fetchNotifications();
     });
 
     // Listen for user tapping on notification
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
       console.log('👆 Notification tapped:', response);
+      fetchNotifications();
       handleNotificationResponse(response);
     });
   };
@@ -104,30 +110,54 @@ export default function OrderNotification() {
     }
   };
 
-  const handleNewNotification = async (notification) => {
-    // Add to state
-    setNotifications((prev) => [notification, ...prev]);
-
-    // Save to AsyncStorage
+  const markNotificationsAsRead = async (authToken) => {
     try {
-      const existing = await AsyncStorage.getItem(STORAGE_KEY);
-      const saved = existing ? JSON.parse(existing) : [];
-      const updated = [notification, ...saved].slice(0, 50); // Keep last 50
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      await axios.put(
+        `${BACKEND_URL}/api/v1/users/notifications/read`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+          params: { type: 'ORDER_STATUS_UPDATE' },
+        }
+      );
     } catch (error) {
-      console.error('Error saving notification:', error);
+      console.error('Error marking notifications as read:', error);
     }
   };
 
-  const loadSavedNotifications = async () => {
+  const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const saved = await AsyncStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setNotifications(JSON.parse(saved));
+      const authToken = await getToken();
+
+      if (!authToken) {
+        setNotifications([]);
+        return;
+      }
+
+      const response = await axios.get(
+        `${BACKEND_URL}/api/v1/users/notifications`,
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+          params: { type: 'ORDER_STATUS_UPDATE' },
+        }
+      );
+
+      const loadedNotifications = response.data.notifications || [];
+      setNotifications(loadedNotifications);
+
+      if ((response.data.unreadCount || 0) > 0) {
+        await markNotificationsAsRead(authToken);
+        setNotifications(
+          loadedNotifications.map((notification) => ({
+            ...notification,
+            isRead: true,
+          }))
+        );
       }
     } catch (error) {
       console.error('Error loading notifications:', error);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
@@ -178,6 +208,12 @@ export default function OrderNotification() {
     console.log('========== PUSH NOTIFICATION REGISTRATION ==========');
 
     try {
+      if (Platform.OS === 'web') {
+        setDebugInfo('Push notifications are disabled on web');
+        Alert.alert('Unavailable', 'Push notifications are not enabled in the web build.');
+        return;
+      }
+
       // Step 1: Check if physical device
       console.log('Step 1: Checking if physical device...');
       if (!Device.isDevice) {
@@ -233,9 +269,7 @@ export default function OrderNotification() {
 
       // Step 4: Get project ID
       console.log('Step 4: Getting Expo project ID...');
-      const projectId =
-        Constants.expoConfig?.extra?.eas?.projectId ||
-        Constants.expoConfig?.projectId;
+      const projectId = getExpoProjectId();
 
       console.log('Project ID:', projectId || 'NOT FOUND');
       setDebugInfo(`Project ID: ${projectId || 'NOT FOUND'}`);
@@ -381,18 +415,9 @@ export default function OrderNotification() {
     }
   };
 
-  const checkStoredToken = async () => {
-    try {
-      const token = await AsyncStorage.getItem('@push_token');
-      console.log('Stored push token in AsyncStorage:', token);
-    } catch (error) {
-      console.error('Error reading token:', error);
-    }
-  };
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadSavedNotifications();
+    await fetchNotifications();
     await checkTokenStatus();
     setRefreshing(false);
   }, []);
@@ -407,15 +432,30 @@ export default function OrderNotification() {
           text: 'Clear All',
           style: 'destructive',
           onPress: async () => {
-            setNotifications([]);
-            await AsyncStorage.removeItem(STORAGE_KEY);
+            try {
+              const authToken = await getToken();
+              if (!authToken) return;
+
+              await axios.delete(
+                `${BACKEND_URL}/api/v1/users/notifications`,
+                {
+                  headers: { Authorization: `Bearer ${authToken}` },
+                  params: { type: 'ORDER_STATUS_UPDATE' },
+                }
+              );
+
+              setNotifications([]);
+            } catch (error) {
+              console.error('Error clearing notifications:', error);
+              Alert.alert('Error', 'Failed to clear notifications');
+            }
           },
         },
       ]
     );
   };
 
-  const deleteNotification = async (index) => {
+  const deleteNotification = async (notificationId) => {
     Alert.alert(
       'Delete Notification',
       'Remove this notification?',
@@ -425,9 +465,24 @@ export default function OrderNotification() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            const updated = notifications.filter((_, i) => i !== index);
-            setNotifications(updated);
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+            try {
+              const authToken = await getToken();
+              if (!authToken) return;
+
+              await axios.delete(
+                `${BACKEND_URL}/api/v1/users/notifications/${notificationId}`,
+                {
+                  headers: { Authorization: `Bearer ${authToken}` },
+                }
+              );
+
+              setNotifications((prev) =>
+                prev.filter((notification) => notification._id !== notificationId)
+              );
+            } catch (error) {
+              console.error('Error deleting notification:', error);
+              Alert.alert('Error', 'Failed to delete notification');
+            }
           },
         },
       ]
@@ -485,15 +540,15 @@ export default function OrderNotification() {
     }
   };
 
-  const renderNotificationItem = ({ item, index }) => {
-    const { title, body, data } = item.request?.content || {};
-    const date = item.date || new Date().toISOString();
+  const renderNotificationItem = ({ item }) => {
+    const { title, body, data } = item;
+    const date = item.createdAt || new Date().toISOString();
 
     return (
       <TouchableOpacity
         style={styles.notificationItem}
-        onPress={() => handleNotificationResponse({ notification: item })}
-        onLongPress={() => deleteNotification(index)}
+        onPress={() => handleNotificationResponse({ notification: { request: { content: { data } } } })}
+        onLongPress={() => deleteNotification(item._id)}
         activeOpacity={0.7}
       >
         <View style={[styles.notificationIcon, { backgroundColor: getNotificationColor(data) + '20' }]}>
@@ -608,60 +663,67 @@ export default function OrderNotification() {
   );
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Icon name="arrow-back" size={24} color="#2c3e50" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Notifications</Text>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <StatusBar backgroundColor="#ffffff" barStyle="dark-content" />
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Icon name="arrow-back" size={24} color="#2c3e50" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Notifications</Text>
+          </View>
+
+          {notifications.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={clearAllNotifications}
+            >
+              <Icon name="delete-sweep" size={24} color="#e74c3c" />
+            </TouchableOpacity>
+          )}
         </View>
 
+        {/* Notification List */}
+        <FlatList
+          data={notifications}
+          renderItem={renderNotificationItem}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={renderEmptyState}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#f39c12']}
+              tintColor="#f39c12"
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+
+        {/* Footer with count */}
         {notifications.length > 0 && (
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={clearAllNotifications}
-          >
-            <Icon name="delete-sweep" size={24} color="#e74c3c" />
-          </TouchableOpacity>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
         )}
       </View>
-
-      {/* Notification List */}
-      <FlatList
-        data={notifications}
-        renderItem={renderNotificationItem}
-        keyExtractor={(item, index) => index.toString()}
-        contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={renderEmptyState}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#f39c12']}
-            tintColor="#f39c12"
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
-
-      {/* Footer with count */}
-      {notifications.length > 0 && (
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
-          </Text>
-        </View>
-      )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',

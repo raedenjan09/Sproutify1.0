@@ -11,6 +11,7 @@ import {
   Image,
   Modal,
   FlatList,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
@@ -20,6 +21,16 @@ import AdminDrawer from '../AdminDrawer';
 
 // Use Expo environment variable instead of @env
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+
+const normalizePickedImage = (asset, index) => ({
+  uri: asset.uri,
+  file: asset.file || null,
+  type: asset.mimeType || 'image/jpeg',
+  name:
+    asset.fileName ||
+    asset.file?.name ||
+    `product_${Date.now()}_${index}.jpg`,
+});
 
 const CreateProductContent = React.memo(({ 
   formData, 
@@ -352,11 +363,9 @@ export default function CreateProductScreen({ navigation }) {
     });
 
     if (!result.canceled) {
-      const uploadedImages = result.assets.map(asset => ({
-        uri: asset.uri,
-        type: 'image/jpeg',
-        name: `product_${Date.now()}.jpg`,
-      }));
+      const uploadedImages = result.assets.map((asset, index) =>
+        normalizePickedImage(asset, index)
+      );
       
       const totalImages = images.length + uploadedImages.length;
       if (totalImages > 5) {
@@ -419,16 +428,28 @@ export default function CreateProductScreen({ navigation }) {
         formDataToSend.append('supplier', formData.supplier);
       }
 
-      images.forEach((image, index) => {
-        const fileUri = image.uri;
+      for (const [index, image] of images.entries()) {
         const fileName = image.name || `product_${Date.now()}_${index}.jpg`;
-        
+        const mimeType = image.type || 'image/jpeg';
+
+        if (Platform.OS === 'web') {
+          if (image.file) {
+            formDataToSend.append('images', image.file, fileName);
+            continue;
+          }
+
+          const response = await fetch(image.uri);
+          const blob = await response.blob();
+          formDataToSend.append('images', blob, fileName);
+          continue;
+        }
+
         formDataToSend.append('images', {
-          uri: fileUri,
-          type: 'image/jpeg',
+          uri: image.uri,
+          type: mimeType,
           name: fileName,
         });
-      });
+      }
 
       console.log('Creating new product...');
       console.log('Form data:', {

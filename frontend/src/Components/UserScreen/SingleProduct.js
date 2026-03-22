@@ -23,11 +23,13 @@ import {
 import axios from 'axios';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { getToken } from '../../utils/helper';
+import { getOrderedProductImageUrls, getPreferredProductImageUrl } from '../../utils/productImages';
 import UserDrawer from './UserDrawer';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_HEIGHT = 320;
+const REVIEW_FILTER_OPTIONS = ['all', '5', '4', '3', '2', '1'];
 
 const THEME = {
   colors: {
@@ -67,11 +69,8 @@ const dismissKeyboard = () => {
 // ─── Image Carousel ───────────────────────────────────────────────────────────
 const ImageCarousel = ({ images }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  const validImages = images && images.length > 0 && images.some(img => img && (img.url || typeof img === 'string'));
-  const urls = validImages 
-    ? images.filter(img => img && (img.url || typeof img === 'string')).map(img => img.url || img) 
-    : [];
+  const urls = getOrderedProductImageUrls(images);
+  const validImages = urls.length > 0;
 
   if (!validImages || urls.length === 0) {
     return (
@@ -266,6 +265,8 @@ export default function SingleProduct({ route, navigation }) {
   const [comment, setComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [expandedReviews, setExpandedReviews] = useState(false);
+  const [reviewSearchQuery, setReviewSearchQuery] = useState('');
+  const [selectedReviewRating, setSelectedReviewRating] = useState('all');
 
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
@@ -279,6 +280,10 @@ export default function SingleProduct({ route, navigation }) {
       checkUserReview();
     }
   }, [product]);
+
+  useEffect(() => {
+    setExpandedReviews(false);
+  }, [reviewSearchQuery, selectedReviewRating]);
 
   const fetchProduct = async () => {
     try {
@@ -338,7 +343,27 @@ export default function SingleProduct({ route, navigation }) {
   };
 
   const averageRating = getAverageRating();
-  const displayedReviews = expandedReviews ? reviews : reviews.slice(0, 3);
+  const normalizedReviewQuery = reviewSearchQuery.trim().toLowerCase();
+  const reviewMatchesFilters = (review) => {
+    const matchesQuery =
+      !normalizedReviewQuery ||
+      review?.comment?.toLowerCase().includes(normalizedReviewQuery) ||
+      review?.name?.toLowerCase().includes(normalizedReviewQuery);
+
+    const matchesRating =
+      selectedReviewRating === 'all' || review?.rating === Number(selectedReviewRating);
+
+    return matchesQuery && matchesRating;
+  };
+
+  const filteredUserReview = userReview && reviewMatchesFilters(userReview) ? userReview : null;
+  const filteredOtherReviews = reviews
+    .filter(review => !userReview || review._id !== userReview._id)
+    .filter(reviewMatchesFilters);
+  const displayedReviews = expandedReviews ? filteredOtherReviews : filteredOtherReviews.slice(0, 3);
+  const totalMatchingReviews = filteredOtherReviews.length + (filteredUserReview ? 1 : 0);
+  const hasActiveReviewFilters = normalizedReviewQuery.length > 0 || selectedReviewRating !== 'all';
+  const shouldShowReviewToggle = filteredOtherReviews.length > 3;
 
   // ── Toast helper ──────────────────────────────────────────────────────────
   const showToast = (message) => {
@@ -441,7 +466,7 @@ export default function SingleProduct({ route, navigation }) {
       if (response.data.success) {
         Alert.alert(
           'Success',
-          userReview ? 'Review updated successfully!' : 'Review submitted successfully!'
+          response.data.message || (userReview ? 'Review updated successfully!' : 'Review submitted successfully!')
         );
         setReviewModalVisible(false);
         dismissKeyboard(); // Dismiss keyboard after submission
@@ -569,14 +594,16 @@ export default function SingleProduct({ route, navigation }) {
                 <View style={styles.reviewsSummaryContainer}>
                   <View style={styles.reviewsSummaryHeader}>
                     <Text style={styles.reviewsSummaryTitle}>Customer Reviews</Text>
-                    <TouchableOpacity 
-                      style={styles.viewAllReviewsButton}
-                      onPress={() => setExpandedReviews(!expandedReviews)}
-                    >
-                      <Text style={styles.viewAllReviewsText}>
-                        {expandedReviews ? 'Show Less' : `View All (${reviews.length})`}
-                      </Text>
-                    </TouchableOpacity>
+                    {shouldShowReviewToggle && (
+                      <TouchableOpacity
+                        style={styles.viewAllReviewsButton}
+                        onPress={() => setExpandedReviews(!expandedReviews)}
+                      >
+                        <Text style={styles.viewAllReviewsText}>
+                          {expandedReviews ? 'Show Less' : `View All (${filteredOtherReviews.length})`}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                   
                   <View style={styles.averageRatingContainer}>
@@ -606,22 +633,85 @@ export default function SingleProduct({ route, navigation }) {
                 </View>
               ) : (
                 <>
+                  {reviews.length > 0 && (
+                    <View style={styles.reviewFiltersSection}>
+                      <View style={styles.reviewSearchContainer}>
+                        <Icon name="search" size={18} color={THEME.colors.muted} />
+                        <TextInput
+                          style={styles.reviewSearchInput}
+                          placeholder="Search comments or names"
+                          placeholderTextColor={THEME.colors.muted}
+                          value={reviewSearchQuery}
+                          onChangeText={setReviewSearchQuery}
+                        />
+                        {reviewSearchQuery.length > 0 && (
+                          <TouchableOpacity onPress={() => setReviewSearchQuery('')}>
+                            <Icon name="close" size={18} color={THEME.colors.muted} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.reviewRatingChips}
+                      >
+                        {REVIEW_FILTER_OPTIONS.map((filterValue) => {
+                          const isActive = selectedReviewRating === filterValue;
+                          return (
+                            <TouchableOpacity
+                              key={filterValue}
+                              style={[
+                                styles.reviewRatingChip,
+                                isActive && styles.reviewRatingChipActive,
+                              ]}
+                              onPress={() => setSelectedReviewRating(filterValue)}
+                            >
+                              <Text
+                                style={[
+                                  styles.reviewRatingChipText,
+                                  isActive && styles.reviewRatingChipTextActive,
+                                ]}
+                              >
+                                {filterValue === 'all' ? 'All' : `${filterValue}★`}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+
+                      <Text style={styles.reviewResultsText}>
+                        {hasActiveReviewFilters
+                          ? `${totalMatchingReviews} matching ${totalMatchingReviews === 1 ? 'review' : 'reviews'}`
+                          : `${reviews.length} total ${reviews.length === 1 ? 'review' : 'reviews'}`}
+                      </Text>
+                    </View>
+                  )}
+
                   {/* User's Review (if exists) */}
-                  {userReview && (
+                  {filteredUserReview && (
                     <View style={styles.userReviewSection}>
                       <Text style={styles.sectionSubtitle}>Your Review</Text>
-                      <ReviewItem review={userReview} isUserReview={true} />
+                      <ReviewItem review={filteredUserReview} isUserReview={true} />
                     </View>
                   )}
 
                   {/* Other Reviews */}
                   {displayedReviews.length > 0 && (
                     <View style={styles.reviewsList}>
-                      {displayedReviews
-                        .filter(r => !userReview || r._id !== userReview._id)
-                        .map((review, index) => (
-                          <ReviewItem key={index} review={review} />
-                        ))}
+                      {displayedReviews.map((review, index) => (
+                        <ReviewItem key={index} review={review} />
+                      ))}
+                    </View>
+                  )}
+
+                  {reviews.length > 0 && totalMatchingReviews === 0 && (
+                    <View style={styles.emptyReviewsState}>
+                      <Icon name="chat-bubble-outline" size={28} color={THEME.colors.muted} />
+                      <Text style={styles.emptyReviewsTitle}>No matching comments</Text>
+                      <Text style={styles.emptyReviewsText}>
+                        Try a different keyword or star rating filter.
+                      </Text>
                     </View>
                   )}
                 </>
@@ -692,8 +782,8 @@ export default function SingleProduct({ route, navigation }) {
                 <View style={styles.reviewProductInfo}>
                   <View style={styles.reviewProductImageContainer}>
                     {product.images && product.images.length > 0 ? (
-                      <Image 
-                        source={{ uri: product.images[0].url || product.images[0] }} 
+                      <Image
+                        source={{ uri: getPreferredProductImageUrl(product.images) }}
                         style={styles.reviewProductImage} 
                       />
                     ) : (
@@ -980,6 +1070,52 @@ const styles = StyleSheet.create({
   writeReviewButtonText: { fontSize: 16, fontWeight: '700', color: 'white' },
   reviewsLoader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 20, gap: 8 },
   loadingReviewsText: { fontSize: 14, color: THEME.colors.muted },
+  reviewFiltersSection: { marginBottom: 18 },
+  reviewSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.surfaceAlt,
+    borderRadius: THEME.radius.pill,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    paddingHorizontal: 14,
+    minHeight: 46,
+    marginBottom: 12,
+    gap: 8,
+  },
+  reviewSearchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: THEME.colors.text,
+    paddingVertical: 11,
+  },
+  reviewRatingChips: { paddingBottom: 4, gap: 8 },
+  reviewRatingChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: THEME.radius.pill,
+    backgroundColor: THEME.colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+  },
+  reviewRatingChipActive: {
+    backgroundColor: THEME.colors.accent,
+    borderColor: THEME.colors.accent,
+  },
+  reviewRatingChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: THEME.colors.muted,
+  },
+  reviewRatingChipTextActive: {
+    color: 'white',
+  },
+  reviewResultsText: {
+    marginTop: 10,
+    fontSize: 12,
+    color: THEME.colors.muted,
+    fontWeight: '600',
+  },
   userReviewSection: { marginBottom: 20 },
   sectionSubtitle: { fontSize: 14, fontWeight: '700', color: THEME.colors.text, marginBottom: 8 },
   reviewsList: { gap: 12, marginBottom: 16 },
@@ -1010,6 +1146,20 @@ const styles = StyleSheet.create({
   reviewerName: { fontSize: 14, fontWeight: '600', color: THEME.colors.text },
   reviewDate: { fontSize: 10, color: THEME.colors.muted },
   reviewComment: { fontSize: 14, color: THEME.colors.muted, lineHeight: 20, marginTop: 8 },
+  emptyReviewsState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 18,
+    borderRadius: THEME.radius.md,
+    backgroundColor: THEME.colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    marginBottom: 16,
+    gap: 6,
+  },
+  emptyReviewsTitle: { fontSize: 15, fontWeight: '700', color: THEME.colors.text },
+  emptyReviewsText: { fontSize: 13, color: THEME.colors.muted, textAlign: 'center', lineHeight: 18 },
   starRatingContainer: { flexDirection: 'row', alignItems: 'center' },
   starsRow: { flexDirection: 'row', alignItems: 'center' },
   interactiveStarsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },

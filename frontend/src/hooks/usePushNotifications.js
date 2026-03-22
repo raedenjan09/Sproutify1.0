@@ -7,12 +7,22 @@ import axios from 'axios';
 import { getToken } from '../utils/helper';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const getExpoProjectId = () =>
+  Constants.easConfig?.projectId ||
+  Constants.expoConfig?.extra?.eas?.projectId ||
+  Constants.expoConfig?.projectId ||
+  null;
 
 export async function registerForPushNotificationsAsync() {
   console.log('========== PUSH NOTIFICATION REGISTRATION START ==========');
   console.log('Timestamp:', new Date().toISOString());
   
   try {
+    if (Platform.OS === 'web') {
+      console.log('Skipping push notification registration on web.');
+      return null;
+    }
+
     // Check if user is logged in first
     const authToken = await getToken();
     console.log('Auth token present before registration:', !!authToken);
@@ -71,8 +81,7 @@ export async function registerForPushNotificationsAsync() {
     console.log('Step 4: Getting Expo project ID...');
     
     // IMPORTANT: Fix your project ID in app.json first!
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId || 
-                      Constants.expoConfig?.projectId;
+    const projectId = getExpoProjectId();
     
     console.log('Project ID:', projectId || 'NOT FOUND');
     

@@ -1,5 +1,6 @@
 const Product = require("../models/Product");
 const Review = require("../models/Review");
+const { sanitizeProfanity } = require("../utils/profanityFilter");
 
 // Create a review (only if the user hasn't reviewed yet and order is delivered)
 exports.createReview = async (req, res) => {
@@ -7,10 +8,13 @@ exports.createReview = async (req, res) => {
     const { rating, comment, productId, orderId } = req.body;
     const userId = req.user._id;
     const userName = req.user.name;
+    const normalizedComment = comment?.trim();
 
-    if (!rating || !comment || !productId || !orderId) {
+    if (!rating || !normalizedComment || !productId || !orderId) {
       return res.status(400).json({ success: false, message: "Please provide rating, comment, productId, and orderId." });
     }
+
+    const { sanitizedText, wasFiltered } = sanitizeProfanity(normalizedComment);
 
     // Check if user already reviewed this product
     const existingReview = await Review.findOne({
@@ -28,7 +32,7 @@ exports.createReview = async (req, res) => {
       product: productId,
       name: userName,
       rating,
-      comment,
+      comment: sanitizedText,
     });
 
     // Update product ratings and review count
@@ -41,7 +45,12 @@ exports.createReview = async (req, res) => {
 
     await product.save();
 
-    res.status(201).json({ success: true, message: "Review created successfully.", review });
+    res.status(201).json({
+      success: true,
+      message: wasFiltered ? "Review created successfully. Some words were filtered." : "Review created successfully.",
+      review,
+      wasCommentFiltered: wasFiltered,
+    });
   } catch (error) {
     console.error("Create review error:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -53,10 +62,13 @@ exports.updateReview = async (req, res) => {
   try {
     const { rating, comment, productId, orderId } = req.body; // Add orderId here
     const userId = req.user._id;
+    const normalizedComment = comment?.trim();
 
-    if (!rating || !comment || !productId) {
+    if (!rating || !normalizedComment || !productId) {
       return res.status(400).json({ success: false, message: "Please provide rating, comment, and productId." });
     }
+
+    const { sanitizedText, wasFiltered } = sanitizeProfanity(normalizedComment);
 
     const review = await Review.findOne({
       user: userId,
@@ -68,7 +80,7 @@ exports.updateReview = async (req, res) => {
     }
 
     review.rating = rating;
-    review.comment = comment;
+    review.comment = sanitizedText;
     await review.save();
 
     // Update product average rating
@@ -79,7 +91,12 @@ exports.updateReview = async (req, res) => {
       await product.save();
     }
 
-    res.status(200).json({ success: true, message: "Review updated successfully.", review });
+    res.status(200).json({
+      success: true,
+      message: wasFiltered ? "Review updated successfully. Some words were filtered." : "Review updated successfully.",
+      review,
+      wasCommentFiltered: wasFiltered,
+    });
   } catch (error) {
     console.error("Update review error:", error);
     res.status(500).json({ success: false, message: "Server error" });

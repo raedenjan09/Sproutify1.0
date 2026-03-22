@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { getToken } from '../../../utils/helper';
+import { getOrderedProductImages } from '../../../utils/productImages';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 import AdminDrawer from '../AdminDrawer';
 
@@ -67,6 +68,8 @@ export default function ViewProductScreen({ navigation, route }) {
   };
 
   const ViewProductContent = () => {
+    const displayImages = getOrderedProductImages(product.images);
+
     // Determine which price to display
     const displayPrice = product.isOnSale && product.discountedPrice 
       ? parseFloat(product.discountedPrice).toFixed(2) 
@@ -78,16 +81,16 @@ export default function ViewProductScreen({ navigation, route }) {
 
     return (
       <ScrollView style={styles.container}>
-        {product.images && product.images.length > 0 && (
+        {displayImages.length > 0 && (
           <View style={styles.imageContainer}>
             <Image
-              source={{ uri: product.images[imageIndex]?.url }}
+              source={{ uri: displayImages[imageIndex]?.url || displayImages[imageIndex] }}
               style={styles.mainImage}
             />
-            {product.images.length > 1 && (
+            {displayImages.length > 1 && (
               <FlatList
                 horizontal
-                data={product.images}
+                data={displayImages}
                 keyExtractor={(item, index) => index.toString()}
                 renderItem={({ item, index }) => (
                   <TouchableOpacity onPress={() => setImageIndex(index)}>

@@ -20,6 +20,7 @@ import {
 import axios from 'axios';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { getToken, logout } from '../../../utils/helper';
+import { getOrderedProductImageUrls, getPreferredProductImageUrl } from '../../../utils/productImages';
 import UserDrawer from '../UserDrawer';
 import Header from '../../layouts/Header';
 
@@ -217,7 +218,7 @@ export default function OrderDetails({ navigation, route }) {
     }
     // Then check if the product is populated and has images
     if (item.product && item.product.images && item.product.images.length > 0) {
-      return item.product.images[0].url || item.product.images[0];
+      return getPreferredProductImageUrl(item.product.images);
     }
     return null;
   };
@@ -232,8 +233,7 @@ export default function OrderDetails({ navigation, route }) {
     
     // Add all product images if the product is populated
     if (item.product && item.product.images && item.product.images.length > 0) {
-      item.product.images.forEach(img => {
-        const imageUrl = img.url || img;
+      getOrderedProductImageUrls(item.product.images).forEach(imageUrl => {
         if (!images.includes(imageUrl)) {
           images.push(imageUrl);
         }
@@ -306,7 +306,7 @@ export default function OrderDetails({ navigation, route }) {
       if (response.data.success) {
         Alert.alert(
           'Success',
-          existingReview ? 'Review updated successfully!' : 'Review submitted successfully!'
+          response.data.message || (existingReview ? 'Review updated successfully!' : 'Review submitted successfully!')
         );
         setReviewModalVisible(false);
         dismissKeyboard(); // Dismiss keyboard after submission
@@ -766,13 +766,22 @@ export default function OrderDetails({ navigation, route }) {
             {/* Payment Information */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Payment Information</Text>
-              
+
               <View style={styles.infoRow}>
-                <Icon name="payment" size={18} color={THEME.colors.accent} />
+                <Icon name="payments" size={18} color={THEME.colors.accent} />
                 <Text style={styles.infoText}>
-                  Payment ID: {order.paymentInfo?.id || 'N/A'}
+                  Payment Method: {order.paymentMethod || 'Cash on Delivery'}
                 </Text>
               </View>
+
+              {order.paymentInfo?.id ? (
+                <View style={styles.infoRow}>
+                  <Icon name="payment" size={18} color={THEME.colors.accent} />
+                  <Text style={styles.infoText}>
+                    Payment Reference: {order.paymentInfo.id}
+                  </Text>
+                </View>
+              ) : null}
               
               <View style={styles.infoRow}>
                 <Icon name="receipt" size={18} color={THEME.colors.accent} />
@@ -781,7 +790,9 @@ export default function OrderDetails({ navigation, route }) {
                     styles.paymentStatus,
                     { color: order.paymentInfo?.status === 'paid' ? THEME.colors.success : THEME.colors.warning }
                   ]}>
-                    {order.paymentInfo?.status || 'Pending'}
+                    {order.paymentInfo?.status
+                      ? `${order.paymentInfo.status.charAt(0).toUpperCase()}${order.paymentInfo.status.slice(1)}`
+                      : 'Pending'}
                   </Text>
                 </Text>
               </View>

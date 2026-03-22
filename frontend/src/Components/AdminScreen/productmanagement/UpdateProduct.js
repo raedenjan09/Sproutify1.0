@@ -12,6 +12,7 @@ import {
   Modal,
   FlatList,
   Switch,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
@@ -21,6 +22,16 @@ import AdminDrawer from '../AdminDrawer';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+
+const normalizePickedImage = (asset, index) => ({
+  uri: asset.uri,
+  file: asset.file || null,
+  type: asset.mimeType || 'image/jpeg',
+  name:
+    asset.fileName ||
+    asset.file?.name ||
+    `product_${Date.now()}_${index}.jpg`,
+});
 
 const UpdateProductContent = React.memo(({
   formData,
@@ -575,11 +586,9 @@ export default function UpdateProductScreen({ navigation, route }) {
     });
 
     if (!result.canceled) {
-      const uploadedImages = result.assets.map(asset => ({
-        uri: asset.uri,
-        type: 'image/jpeg',
-        name: `product_${Date.now()}.jpg`,
-      }));
+      const uploadedImages = result.assets.map((asset, index) =>
+        normalizePickedImage(asset, index)
+      );
       const totalImages = existingImages.length + newImages.length + uploadedImages.length;
       if (totalImages > 5) {
         Alert.alert('Limit Exceeded', 'Maximum 5 images total allowed');
@@ -696,16 +705,28 @@ export default function UpdateProductScreen({ navigation, route }) {
         formDataToSend.append('existingImages', JSON.stringify(existingImages));
       }
 
-      newImages.forEach((image, index) => {
-        const fileUri = image.uri;
+      for (const [index, image] of newImages.entries()) {
         const fileName = image.name || `product_${Date.now()}_${index}.jpg`;
-        
+        const mimeType = image.type || 'image/jpeg';
+
+        if (Platform.OS === 'web') {
+          if (image.file) {
+            formDataToSend.append('images', image.file, fileName);
+            continue;
+          }
+
+          const response = await fetch(image.uri);
+          const blob = await response.blob();
+          formDataToSend.append('images', blob, fileName);
+          continue;
+        }
+
         formDataToSend.append('images', {
-          uri: fileUri,
-          type: 'image/jpeg',
+          uri: image.uri,
+          type: mimeType,
           name: fileName,
         });
-      });
+      }
       
       const res = await axios.put(
         `${BACKEND_URL}/api/v1/admin/products/${product._id}`,

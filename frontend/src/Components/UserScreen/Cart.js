@@ -31,6 +31,7 @@ import axios from 'axios';
 import * as SQLite from 'expo-sqlite';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { getToken } from '../../utils/helper';
+import { getOrderedProductImageUrls, getPreferredProductImageUrl } from '../../utils/productImages';
 import UserDrawer from './UserDrawer';
 import Header from '../layouts/Header';
 
@@ -168,7 +169,7 @@ export const saveCartToSQLite = async (items) => {
       }
       
       const quantity = item.quantity || 1;
-      const image = product.images?.[0]?.url || '';
+      const image = getPreferredProductImageUrl(product.images) || '';
       const category = product.category || '';
       
       await db.runAsync(
@@ -227,8 +228,7 @@ export const clearCartSQLite = async () => {
 // ─── Image Carousel (for cart item) ──────────────────────────────────────────
 const ItemImageCarousel = ({ images }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  const urls = (images || []).filter(img => img?.url).map(img => img.url);
+  const urls = getOrderedProductImageUrls(images);
 
   if (urls.length === 0) {
     return (

@@ -14,15 +14,33 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { FontAwesome, MaterialIcons as Icon } from '@expo/vector-icons';
-import { AccessToken, LoginManager } from 'react-native-fbsdk-next';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { FacebookAuthProvider, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { authenticate } from '../../utils/helper';
 import { firebaseAuth } from '../../utils/firebase';
 import { registerForPushNotificationsAsync } from '../../hooks/usePushNotifications';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+const getGoogleSigninModule = () => {
+  try {
+    return require('@react-native-google-signin/google-signin');
+  } catch (error) {
+    console.error('Google Sign-In native module is unavailable in this runtime:', error);
+    return null;
+  }
+};
+
+const getFacebookSdkModule = () => {
+  try {
+    return require('react-native-fbsdk-next');
+  } catch (error) {
+    console.error('Facebook SDK native module is unavailable in this runtime:', error);
+    return null;
+  }
+};
 
 const THEME = {
   colors: {
@@ -55,7 +73,12 @@ export default function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    GoogleSignin.configure({
+    if (isExpoGo) {
+      return;
+    }
+
+    const googleSigninModule = getGoogleSigninModule();
+    googleSigninModule?.GoogleSignin?.configure({
       webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || undefined,
       iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || undefined,
       offlineAccess: false,
@@ -99,6 +122,14 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleGoogleLogin = async () => {
+    if (isExpoGo) {
+      Alert.alert(
+        'Google Login Requires a Development Build',
+        'Expo Go does not include the native Google Sign-In module used by this project. Use a development build or APK for Google login.'
+      );
+      return;
+    }
+
     if (!firebaseAuth) {
       Alert.alert(
         'Google Login Not Available',
@@ -115,8 +146,18 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
+    let googleStatusCodes;
+
     setGoogleLoading(true);
     try {
+      const googleSigninModule = getGoogleSigninModule();
+      const GoogleSignin = googleSigninModule?.GoogleSignin;
+      googleStatusCodes = googleSigninModule?.statusCodes;
+
+      if (!GoogleSignin || !googleStatusCodes) {
+        throw new Error('Google Sign-In native module is unavailable in this runtime.');
+      }
+
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const result = await GoogleSignin.signIn();
 
@@ -143,16 +184,16 @@ export default function LoginScreen({ navigation }) {
     } catch (error) {
       console.error('Google login error:', error);
 
-      if (error?.code === statusCodes.SIGN_IN_CANCELLED) {
+      if (error?.code === googleStatusCodes?.SIGN_IN_CANCELLED) {
         return;
       }
 
-      if (error?.code === statusCodes.IN_PROGRESS) {
+      if (error?.code === googleStatusCodes?.IN_PROGRESS) {
         Alert.alert('Please Wait', 'Google sign-in is already in progress.');
         return;
       }
 
-      if (error?.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+      if (error?.code === googleStatusCodes?.PLAY_SERVICES_NOT_AVAILABLE) {
         Alert.alert(
           'Google Play Services Required',
           'Google Play Services is unavailable or needs an update on this device.'
@@ -177,6 +218,14 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleFacebookLogin = async () => {
+    if (isExpoGo) {
+      Alert.alert(
+        'Facebook Login Requires a Development Build',
+        'Expo Go does not include the native Facebook SDK used by this project. Use a development build or APK for Facebook login.'
+      );
+      return;
+    }
+
     if (!firebaseAuth) {
       Alert.alert(
         'Facebook Login Not Available',
@@ -195,6 +244,14 @@ export default function LoginScreen({ navigation }) {
 
     setFacebookLoading(true);
     try {
+      const facebookSdkModule = getFacebookSdkModule();
+      const LoginManager = facebookSdkModule?.LoginManager;
+      const AccessToken = facebookSdkModule?.AccessToken;
+
+      if (!LoginManager || !AccessToken) {
+        throw new Error('Facebook SDK native module is unavailable in this runtime.');
+      }
+
       LoginManager.logOut();
       const loginResult = await LoginManager.logInWithPermissions(['public_profile', 'email']);
 
@@ -238,6 +295,10 @@ export default function LoginScreen({ navigation }) {
   };
 
   const isBusy = loading || googleLoading || facebookLoading;
+  const socialLoginDisabled = isBusy || isExpoGo;
+  const loginSubtitle = isExpoGo
+    ? 'Email login works in Expo Go. Google and Facebook sign-in need a development build or APK.'
+    : 'Use your email or continue with Google or Facebook.';
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -261,9 +322,7 @@ export default function LoginScreen({ navigation }) {
 
           <View style={styles.formCard}>
             <Text style={styles.formTitle}>Sign in</Text>
-            <Text style={styles.formSubtitle}>
-              Use your email or continue with Google or Facebook.
-            </Text>
+            <Text style={styles.formSubtitle}>{loginSubtitle}</Text>
 
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Email address</Text>
@@ -335,9 +394,9 @@ export default function LoginScreen({ navigation }) {
             </View>
 
             <TouchableOpacity
-              style={[styles.socialButton, styles.googleButton, isBusy && styles.buttonDisabled]}
+              style={[styles.socialButton, styles.googleButton, socialLoginDisabled && styles.buttonDisabled]}
               onPress={handleGoogleLogin}
-              disabled={isBusy}
+              disabled={socialLoginDisabled}
               activeOpacity={0.88}
             >
               {googleLoading ? (
@@ -351,9 +410,9 @@ export default function LoginScreen({ navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.socialButton, styles.facebookButton, isBusy && styles.buttonDisabled]}
+              style={[styles.socialButton, styles.facebookButton, socialLoginDisabled && styles.buttonDisabled]}
               onPress={handleFacebookLogin}
-              disabled={isBusy}
+              disabled={socialLoginDisabled}
               activeOpacity={0.88}
             >
               {facebookLoading ? (

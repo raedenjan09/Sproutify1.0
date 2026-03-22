@@ -17,6 +17,7 @@ import {
 import axios from 'axios';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { getToken } from '../../utils/helper';
+import { getOrderedProductImageUrls, getPreferredProductImageUrl } from '../../utils/productImages';
 import UserDrawer from './UserDrawer';
 import Header from '../layouts/Header';
 import { clearCartSQLite } from './Cart';
@@ -24,6 +25,18 @@ import { clearCartSQLite } from './Cart';
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 const TAX_RATE = 0.1; // 10% VAT
 const SHIPPING_PRICE = 50;
+const PAYMENT_OPTIONS = [
+  {
+    value: 'Cash on Delivery',
+    label: 'Cash on Delivery',
+    description: 'Pay when your order arrives.',
+  },
+  {
+    value: 'GCash',
+    label: 'GCash',
+    description: 'Select now and keep the order pending until payment is confirmed.',
+  },
+];
 
 const THEME = {
   colors: {
@@ -52,9 +65,8 @@ const THEME = {
 // ─── Image Carousel Component ─────────────────────────────────────────────────
 const ImageCarousel = ({ images, onImagePress }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  const validImages = images && images.length > 0 && images.some(img => img?.url);
-  const urls = validImages ? images.filter(img => img?.url).map(img => img.url) : [];
+  const urls = getOrderedProductImageUrls(images);
+  const validImages = urls.length > 0;
 
   if (!validImages || urls.length === 0) {
     return (
@@ -109,9 +121,8 @@ const ImageCarousel = ({ images, onImagePress }) => {
 // ─── Full Screen Image Modal ─────────────────────────────────────────────────
 const ImageViewerModal = ({ visible, images, initialIndex, onClose }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex || 0);
-
-  const validImages = images && images.length > 0 && images.some(img => img?.url);
-  const urls = validImages ? images.filter(img => img?.url).map(img => img.url) : [];
+  const urls = getOrderedProductImageUrls(images);
+  const validImages = urls.length > 0;
 
   useEffect(() => {
     if (visible) {
@@ -288,6 +299,7 @@ export default function Checkout({ route, navigation }) {
 
   // Form errors
   const [errors, setErrors] = useState({});
+  const [paymentMethod, setPaymentMethod] = useState('Cash on Delivery');
 
   useEffect(() => {
     initializeCheckout();
@@ -397,7 +409,7 @@ export default function Checkout({ route, navigation }) {
       price: effectivePrice,
       originalPrice: productData.isOnSale && productData.discountedPrice ? parseFloat(productData.price) : null,
       name: productData.name,
-      image: productData.images?.[0]?.url || ''
+      image: getPreferredProductImageUrl(productData.images) || ''
     }]);
     
     setTotals({
@@ -422,7 +434,7 @@ export default function Checkout({ route, navigation }) {
         price: effectivePrice,
         originalPrice: product.isOnSale && product.discountedPrice ? parseFloat(product.price) : null,
         name: product.name || 'Product',
-        image: product.images?.[0]?.url || ''
+        image: getPreferredProductImageUrl(product.images) || ''
       };
     });
 
@@ -688,6 +700,7 @@ export default function Checkout({ route, navigation }) {
                   {
                     productId: soloProduct._id,
                     quantity: orderItems[0]?.quantity || quantity,
+                    paymentMethod,
                   },
                   {
                     headers: {
@@ -701,7 +714,9 @@ export default function Checkout({ route, navigation }) {
                 console.log('Placing cart checkout order with', orderItems.length, 'items');
                 response = await axios.post(
                   `${BACKEND_URL}/api/v1/checkout`,
-                  {},
+                  {
+                    paymentMethod,
+                  },
                   {
                     headers: {
                       'Content-Type': 'application/json',
@@ -951,6 +966,58 @@ export default function Checkout({ route, navigation }) {
                   </Text>
                 </View>
               )}
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Payment Method</Text>
+              <Text style={styles.sectionSubtitle}>
+                Choose how you want this order to be handled at payment time.
+              </Text>
+
+              {PAYMENT_OPTIONS.map((option) => {
+                const selected = paymentMethod === option.value;
+
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.paymentOption,
+                      selected && styles.paymentOptionSelected,
+                    ]}
+                    onPress={() => setPaymentMethod(option.value)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.paymentOptionLeft}>
+                      <View
+                        style={[
+                          styles.paymentRadio,
+                          selected && styles.paymentRadioSelected,
+                        ]}
+                      >
+                        {selected ? <View style={styles.paymentRadioDot} /> : null}
+                      </View>
+
+                      <View style={styles.paymentCopy}>
+                        <Text style={styles.paymentLabel}>{option.label}</Text>
+                        <Text style={styles.paymentDescription}>{option.description}</Text>
+                      </View>
+                    </View>
+
+                    <Icon
+                      name={option.value === 'GCash' ? 'phone-android' : 'payments'}
+                      size={20}
+                      color={selected ? THEME.colors.accentDark : THEME.colors.muted}
+                    />
+                  </TouchableOpacity>
+                );
+              })}
+
+              <View style={styles.paymentNotice}>
+                <Icon name="info-outline" size={18} color={THEME.colors.warning} />
+                <Text style={styles.paymentNoticeText}>
+                  This only stores the selected payment method for now. Payment status stays pending until payment is actually completed or manually confirmed.
+                </Text>
+              </View>
             </View>
 
             <View style={{ height: 100 }} />
@@ -1434,6 +1501,78 @@ const styles = StyleSheet.create({
   warningText: {
     flex: 1,
     fontSize: 13,
+    color: THEME.colors.warning,
+    marginLeft: 8,
+  },
+  paymentOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    backgroundColor: THEME.colors.surfaceAlt,
+    marginBottom: 10,
+  },
+  paymentOptionSelected: {
+    borderColor: '#B7D8BA',
+    backgroundColor: THEME.colors.accentSoft,
+  },
+  paymentOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  paymentRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: THEME.colors.muted,
+    backgroundColor: THEME.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  paymentRadioSelected: {
+    borderColor: THEME.colors.accentDark,
+  },
+  paymentRadioDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: THEME.colors.accentDark,
+  },
+  paymentCopy: {
+    flex: 1,
+  },
+  paymentLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: THEME.colors.text,
+    marginBottom: 3,
+  },
+  paymentDescription: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: THEME.colors.muted,
+  },
+  paymentNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: THEME.colors.saleSoft,
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#F3D6B8',
+    marginTop: 4,
+  },
+  paymentNoticeText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
     color: THEME.colors.warning,
     marginLeft: 8,
   },

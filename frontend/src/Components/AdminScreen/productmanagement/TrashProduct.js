@@ -14,6 +14,7 @@ import {
 import { Swipeable } from 'react-native-gesture-handler';
 import axios from 'axios';
 import { getToken } from '../../../utils/helper';
+import { getPreferredProductImageUrl } from '../../../utils/productImages';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 import AdminDrawer from '../AdminDrawer';
 
@@ -175,7 +176,7 @@ export default function TrashProductScreen({ navigation }) {
           activeOpacity={0.7}
         >
           <Image
-            source={{ uri: item.images?.[0]?.url || 'https://via.placeholder.com/100' }}
+            source={{ uri: getPreferredProductImageUrl(item.images) || 'https://via.placeholder.com/100' }}
             style={styles.productImage}
           />
           <View style={styles.productInfo}>

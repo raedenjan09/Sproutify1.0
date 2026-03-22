@@ -35,6 +35,8 @@ const THEME = {
   },
 };
 
+const DRAWER_WIDTH = 280;
+
 const UserDrawer = ({ children }) => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -44,7 +46,7 @@ const UserDrawer = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   
-  const slideAnim = useRef(new Animated.Value(-300)).current;
+  const slideAnim = useRef(new Animated.Value(DRAWER_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Keep bottom-nav active state aligned to current screen
@@ -52,17 +54,18 @@ const UserDrawer = ({ children }) => {
     const routeToTab = {
       Home: 'Home',
       Cart: 'Cart',
-      Notifications: 'Notifications',
-      OrderNotification: 'Notifications',
-      ProductNotification: 'Notifications',
+      Notifications: null,
+      OrderNotification: null,
+      ProductNotification: null,
       Profile: 'Menu',
       ChangePassword: 'Menu',
       OrderHistory: 'Menu',
       OrderDetails: 'Menu',
     };
 
-    const nextTab = routeToTab[route.name];
-    if (nextTab) setActiveTab(nextTab);
+    if (Object.prototype.hasOwnProperty.call(routeToTab, route.name)) {
+      setActiveTab(routeToTab[route.name]);
+    }
   }, [route.name]);
 
   const loadUserData = async () => {
@@ -102,7 +105,7 @@ const UserDrawer = ({ children }) => {
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
-        toValue: -300,
+        toValue: DRAWER_WIDTH,
         duration: 200,
         useNativeDriver: true,
       }),
@@ -206,13 +209,6 @@ const UserDrawer = ({ children }) => {
       icon: 'cart-outline',
       activeIcon: 'cart',
       screen: 'Cart'
-    },
-    {
-      id: 'notifications',
-      label: 'Notifications',
-      icon: 'notifications-outline',
-      activeIcon: 'notifications',
-      screen: 'Notifications'
     },
     {
       id: 'menu',
@@ -328,44 +324,46 @@ const UserDrawer = ({ children }) => {
                   { transform: [{ translateX: slideAnim }] }
                 ]}
               >
-                {/* Drawer Header */}
-                <View style={styles.drawerHeader}>
-                  <View style={styles.userInfo}>
-                    <View style={styles.avatar}>
-                      {loading ? (
-                        <Text style={styles.avatarText}>...</Text>
-                      ) : (
-                        <Text style={styles.avatarText}>{getUserInitials()}</Text>
-                      )}
+                <SafeAreaView style={styles.drawerSafeArea} edges={['top', 'right', 'bottom']}>
+                  {/* Drawer Header */}
+                  <View style={styles.drawerHeader}>
+                    <View style={styles.userInfo}>
+                      <View style={styles.avatar}>
+                        {loading ? (
+                          <Text style={styles.avatarText}>...</Text>
+                        ) : (
+                          <Text style={styles.avatarText}>{getUserInitials()}</Text>
+                        )}
+                      </View>
+                      <View style={styles.userDetails}>
+                        {loading ? (
+                          <>
+                            <Text style={styles.userName}>Loading...</Text>
+                            <Text style={styles.userEmail}>Please wait</Text>
+                          </>
+                        ) : (
+                          <>
+                            <Text style={styles.userName}>{user?.name || 'User'}</Text>
+                            <Text style={styles.userEmail}>{user?.email || 'user@email.com'}</Text>
+                          </>
+                        )}
+                      </View>
                     </View>
-                    <View style={styles.userDetails}>
-                      {loading ? (
-                        <>
-                          <Text style={styles.userName}>Loading...</Text>
-                          <Text style={styles.userEmail}>Please wait</Text>
-                        </>
-                      ) : (
-                        <>
-                          <Text style={styles.userName}>{user?.name || 'User'}</Text>
-                          <Text style={styles.userEmail}>{user?.email || 'user@email.com'}</Text>
-                        </>
-                      )}
-                    </View>
+                    <TouchableOpacity onPress={hideDrawer} style={styles.closeButton}>
+                      <Ionicons name="close" size={24} color="#666" />
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity onPress={hideDrawer} style={styles.closeButton}>
-                    <Ionicons name="close" size={24} color="#666" />
-                  </TouchableOpacity>
-                </View>
 
-                {/* Drawer Items */}
-                <View style={styles.drawerItems}>
-                  {drawerItems.map(renderDrawerItem)}
-                </View>
+                  {/* Drawer Items */}
+                  <View style={styles.drawerItems}>
+                    {drawerItems.map(renderDrawerItem)}
+                  </View>
 
-                {/* Drawer Footer */}
-                <View style={styles.drawerFooter}>
-                  <Text style={styles.appVersion}>Sproutify v1.0.0</Text>
-                </View>
+                  {/* Drawer Footer */}
+                  <View style={styles.drawerFooter}>
+                    <Text style={styles.appVersion}>Sproutify v1.0.0</Text>
+                  </View>
+                </SafeAreaView>
               </Animated.View>
             </TouchableWithoutFeedback>
           </Animated.View>
@@ -441,15 +439,15 @@ const styles = StyleSheet.create({
   },
   drawerContainer: {
     position: 'absolute',
-    left: 0,
+    right: 0,
     top: 0,
     bottom: 0,
-    width: 280,
+    width: DRAWER_WIDTH,
     backgroundColor: THEME.colors.surface,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 2, height: 0 },
+        shadowOffset: { width: -2, height: 0 },
         shadowOpacity: 0.3,
         shadowRadius: 5,
       },
@@ -457,6 +455,10 @@ const styles = StyleSheet.create({
         elevation: 8,
       },
     }),
+  },
+  drawerSafeArea: {
+    flex: 1,
+    backgroundColor: THEME.colors.surface,
   },
   drawerHeader: {
     flexDirection: 'row',

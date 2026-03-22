@@ -51,7 +51,7 @@ exports.createProduct = async (req, res, next) => {
       console.log(`📤 ${req.files.length} files received for upload`);
       for (const file of req.files) {
         try {
-          const uploadResult = await uploadToCloudinary(file.path, 'harmoniahub/products');
+          const uploadResult = await uploadToCloudinary(file.path, 'Sproutify/products');
           productImages.push({
             public_id: uploadResult.public_id,
             url: uploadResult.url
@@ -68,6 +68,13 @@ exports.createProduct = async (req, res, next) => {
       for (const img of req.body.images) {
         productImages.push(img);
       }
+    }
+
+    if (productImages.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one product image is required',
+      });
     }
 
     const productData = {
@@ -239,7 +246,7 @@ exports.updateProduct = async (req, res, next) => {
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         try {
-          const uploadResult = await uploadToCloudinary(file.path, 'harmoniahub/products');
+          const uploadResult = await uploadToCloudinary(file.path, 'Sproutify/products');
           newImages.push({
             public_id: uploadResult.public_id,
             url: uploadResult.url
@@ -250,6 +257,13 @@ exports.updateProduct = async (req, res, next) => {
           safeUnlink(file.path);
         }
       }
+    }
+
+    if (newImages.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one product image is required',
+      });
     }
 
     // Delete old images

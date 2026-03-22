@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { getToken } from '../../../utils/helper';
+import { getPreferredProductImageUrl } from '../../../utils/productImages';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -98,14 +99,14 @@ export default function ProductNotificationScreen({ navigation }) {
       onPress={() => navigation.navigate('ProductDetail', { productId: item._id })}
     >
       <Image
-        source={{ uri: item.images[0]?.url }}
+        source={{ uri: getPreferredProductImageUrl(item.images) }}
         style={styles.productImage}
         // Option 1: Remove defaultSource if you don't have a placeholder
         // defaultSource={PLACEHOLDER_IMAGE}
         
         // Option 2: Use a fallback with onError
         onError={(e) => {
-          console.log('Image failed to load:', item.images[0]?.url);
+          console.log('Image failed to load:', getPreferredProductImageUrl(item.images));
           // You can set a fallback state here if needed
         }}
       />
@@ -401,4 +402,3 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
 });
-

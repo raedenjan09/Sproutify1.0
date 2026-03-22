@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
@@ -7,8 +8,14 @@ const PROFILE_CACHE_KEY = 'userData';
 
 // Auth change listeners array
 let authChangeListeners = [];
+const useSecureStore = Platform.OS !== 'web';
 
 const storeSecureValue = async (key, value, label) => {
+  if (!useSecureStore) {
+    await AsyncStorage.setItem(key, value);
+    return;
+  }
+
   try {
     await SecureStore.setItemAsync(key, value);
     await AsyncStorage.removeItem(key);
@@ -19,6 +26,15 @@ const storeSecureValue = async (key, value, label) => {
 };
 
 const readSecureValue = async (key, label) => {
+  if (!useSecureStore) {
+    try {
+      return (await AsyncStorage.getItem(key)) || null;
+    } catch (error) {
+      console.error(`Error getting ${label} from AsyncStorage`, error);
+      return null;
+    }
+  }
+
   try {
     const secureValue = await SecureStore.getItemAsync(key);
     if (secureValue) {
@@ -48,6 +64,11 @@ const readSecureValue = async (key, label) => {
 };
 
 const clearSecureValue = async (key, label) => {
+  if (!useSecureStore) {
+    await AsyncStorage.removeItem(key);
+    return;
+  }
+
   try {
     await SecureStore.deleteItemAsync(key);
   } catch (error) {

@@ -1,5 +1,6 @@
 // backend/controllers/ManageOrderController.js
 const Order = require("../models/Order");
+const Notification = require("../models/Notification");
 const sendEmail = require("../utils/Mailer");
 const { generateOrderEmailTemplate } = require("../utils/emailTemplate");
 const { generateReceiptPDF } = require("../utils/pdfGenerator");
@@ -79,55 +80,78 @@ exports.updateOrderStatus = async (req, res) => {
 
     const oldStatus = order.orderStatus;
     order.orderStatus = status;
+
+    if (!order.paymentInfo) {
+      order.paymentInfo = {};
+    }
     
     if (status === "Delivered") {
       order.deliveredAt = Date.now();
+      order.paymentInfo.status = "paid";
+
+      if (!order.paidAt) {
+        order.paidAt = Date.now();
+      }
+    } else if (!order.paymentInfo.status) {
+      order.paymentInfo.status = "pending";
     }
 
     await order.save();
+
+    let notificationTitle = `Order ${status}`;
+    let notificationBody = `Your order #${order._id.toString().slice(-8)} status changed to ${status}`;
+
+    const notificationData = {
+      type: 'ORDER_STATUS_UPDATE',
+      orderId: order._id.toString(),
+      orderNumber: order._id.toString().slice(-8),
+      status: status,
+      oldStatus: oldStatus,
+      timestamp: new Date().toISOString(),
+      user: {
+        id: order.user?._id?.toString(),
+        name: order.user?.name,
+        email: order.user?.email
+      },
+      orderSummary: {
+        totalAmount: order.totalPrice,
+        itemCount: order.orderItems.reduce((sum, item) => sum + item.quantity, 0),
+        items: order.orderItems.map(item => ({
+          productName: item.product?.name || 'Product',
+          quantity: item.quantity,
+          price: item.price
+        }))
+      }
+    };
+
+    if (status === "Delivered") {
+      notificationBody = `🎉 Your order #${order._id.toString().slice(-8)} has been delivered! Check your email for receipt.`;
+    }
+
+    if (order.user?._id) {
+      try {
+        await Notification.create({
+          user: order.user._id,
+          type: 'ORDER_STATUS_UPDATE',
+          title: notificationTitle,
+          body: notificationBody,
+          data: notificationData,
+        });
+        console.log(`✅ Notification history saved for order #${order._id}`);
+      } catch (notificationError) {
+        console.error('❌ Failed to save notification history:', notificationError);
+      }
+    }
 
     // Send push notification if user has token
     if (order.user && order.user.pushToken) {
       try {
         console.log(`📱 Attempting to send push notification for order #${order._id}`);
-        
-        let notificationBody = `Your order #${order._id.toString().slice(-8)} status changed to ${status}`;
-        
-        // Enhanced notification data with user information
-        let notificationData = {
-          type: 'ORDER_STATUS_UPDATE',
-          orderId: order._id.toString(),
-          orderNumber: order._id.toString().slice(-8),
-          status: status,
-          oldStatus: oldStatus,
-          timestamp: new Date().toISOString(),
-          // Add user information to notification data
-          user: {
-            id: order.user._id.toString(),
-            name: order.user.name,
-            email: order.user.email
-          },
-          // Add order summary
-          orderSummary: {
-            totalAmount: order.totalPrice,
-            itemCount: order.orderItems.reduce((sum, item) => sum + item.quantity, 0),
-            items: order.orderItems.map(item => ({
-              productName: item.product?.name || 'Product',
-              quantity: item.quantity,
-              price: item.price
-            }))
-          }
-        };
-
-        // Special message for delivered orders
-        if (status === "Delivered") {
-          notificationBody = `🎉 Your order #${order._id.toString().slice(-8)} has been delivered! Check your email for receipt.`;
-        }
 
         // Send the push notification
         const pushResult = await sendPushNotification(
           order.user.pushToken,
-          `Order ${status}`,
+          notificationTitle,
           notificationBody,
           notificationData
         );
@@ -160,7 +184,7 @@ exports.updateOrderStatus = async (req, res) => {
           
           emailOptions.attachments = [
             {
-              filename: `HarmoniaHub_Receipt_${order._id}.pdf`,
+              filename: `Sproutify_Receipt_${order._id}.pdf`,
               content: pdfBuffer,
               contentType: 'application/pdf'
             }

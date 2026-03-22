@@ -4,6 +4,19 @@ const User = require("../models/User");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 
+const ALLOWED_PAYMENT_METHODS = ['Cash on Delivery', 'GCash'];
+
+const normalizePaymentMethod = (paymentMethod) => {
+  if (!paymentMethod || typeof paymentMethod !== 'string') {
+    return 'Cash on Delivery';
+  }
+
+  const trimmedMethod = paymentMethod.trim();
+  return ALLOWED_PAYMENT_METHODS.includes(trimmedMethod)
+    ? trimmedMethod
+    : null;
+};
+
 // Helper function to check if discount is active
 const checkDiscountActive = (product) => {
   if (!product.discountedPrice || !product.discountStartDate || !product.discountEndDate) {
@@ -30,6 +43,14 @@ const getEffectivePrice = (product) => {
 exports.checkout = async (req, res) => {
   try {
     const userId = req.user._id;
+    const paymentMethod = normalizePaymentMethod(req.body.paymentMethod);
+
+    if (!paymentMethod) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid payment method. Allowed methods: ${ALLOWED_PAYMENT_METHODS.join(', ')}`,
+      });
+    }
 
     // Fetch user with address
     const user = await User.findById(userId);
@@ -126,12 +147,15 @@ exports.checkout = async (req, res) => {
       user: userId,
       orderItems,
       shippingInfo,
+      paymentMethod,
+      paymentInfo: {
+        status: 'pending',
+      },
       itemsPrice,
       taxPrice,
       shippingPrice: SHIPPING_PRICE,
       totalPrice,
       orderStatus: "Processing",
-      paidAt: Date.now(),
       createdAt: Date.now(),
     });
 
@@ -170,9 +194,17 @@ exports.soloCheckout = async (req, res) => {
   try {
     const userId = req.user._id;
     const { productId, quantity = 1 } = req.body;
+    const paymentMethod = normalizePaymentMethod(req.body.paymentMethod);
 
     if (!productId) {
       return res.status(400).json({ success: false, message: "Product ID is required" });
+    }
+
+    if (!paymentMethod) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid payment method. Allowed methods: ${ALLOWED_PAYMENT_METHODS.join(', ')}`,
+      });
     }
 
     // Fetch user
@@ -250,12 +282,15 @@ exports.soloCheckout = async (req, res) => {
       user: userId,
       orderItems,
       shippingInfo,
+      paymentMethod,
+      paymentInfo: {
+        status: 'pending',
+      },
       itemsPrice,
       taxPrice,
       shippingPrice: SHIPPING_PRICE,
       totalPrice,
       orderStatus: "Processing",
-      paidAt: Date.now(),
       createdAt: Date.now(),
     });
 

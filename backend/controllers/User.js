@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const crypto = require('crypto');
 const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/Cloudinary');
 const Mailer = require('../utils/Mailer');
@@ -213,7 +214,7 @@ exports.updateProfile = async (req, res) => {
       }
 
       // Upload new avatar
-      const avatarResult = await uploadToCloudinary(avatarSource, 'rubbersense/avatars');
+      const avatarResult = await uploadToCloudinary(avatarSource, 'Sproutify/avatars');
       updateData.avatar = {
         public_id: avatarResult.public_id,
         url: avatarResult.url
@@ -648,6 +649,123 @@ exports.removePushToken = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to remove push token'
+    });
+  }
+};
+
+// ========== GET USER NOTIFICATIONS ==========
+exports.getUserNotifications = async (req, res) => {
+  try {
+    const query = { user: req.user.id };
+
+    if (req.query.type) {
+      query.type = req.query.type;
+    }
+
+    const [notifications, unreadCount] = await Promise.all([
+      Notification.find(query)
+        .sort({ createdAt: -1 })
+        .limit(100),
+      Notification.countDocuments({
+        ...query,
+        isRead: false,
+      }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: notifications.length,
+      unreadCount,
+      notifications,
+    });
+  } catch (error) {
+    console.error('❌ Error getting notifications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get notifications',
+    });
+  }
+};
+
+// ========== MARK USER NOTIFICATIONS AS READ ==========
+exports.markNotificationsAsRead = async (req, res) => {
+  try {
+    const query = {
+      user: req.user.id,
+      isRead: false,
+    };
+
+    if (req.query.type) {
+      query.type = req.query.type;
+    }
+
+    const result = await Notification.updateMany(query, {
+      $set: { isRead: true },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Notifications marked as read successfully',
+      modifiedCount: result.modifiedCount,
+    });
+  } catch (error) {
+    console.error('❌ Error marking notifications as read:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark notifications as read',
+    });
+  }
+};
+
+// ========== DELETE SINGLE NOTIFICATION ==========
+exports.deleteNotification = async (req, res) => {
+  try {
+    const notification = await Notification.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notification not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Notification deleted successfully',
+    });
+  } catch (error) {
+    console.error('❌ Error deleting notification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete notification',
+    });
+  }
+};
+
+// ========== CLEAR USER NOTIFICATIONS ==========
+exports.clearNotifications = async (req, res) => {
+  try {
+    const query = { user: req.user.id };
+
+    if (req.query.type) {
+      query.type = req.query.type;
+    }
+
+    const result = await Notification.deleteMany(query);
+
+    res.status(200).json({
+      success: true,
+      message: 'Notifications cleared successfully',
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error('❌ Error clearing notifications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear notifications',
     });
   }
 };

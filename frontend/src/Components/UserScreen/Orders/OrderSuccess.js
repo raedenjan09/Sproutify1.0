@@ -58,8 +58,20 @@ export default function OrderSuccess({ route, navigation }) {
               </View>
             )}
             <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Payment Method</Text>
+              <Text style={styles.infoValue}>{order?.paymentMethod || 'Cash on Delivery'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Payment Status</Text>
+              <Text style={styles.infoValue}>
+                {order?.paymentInfo?.status
+                  ? `${order.paymentInfo.status.charAt(0).toUpperCase()}${order.paymentInfo.status.slice(1)}`
+                  : 'Pending'}
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Total</Text>
-              <Text style={styles.totalValue}>???{order?.totalPrice?.toFixed(2) || '0.00'}</Text>
+              <Text style={styles.totalValue}>{`\u20B1${order?.totalPrice?.toFixed(2) || '0.00'}`}</Text>
             </View>
           </View>
 
@@ -210,4 +222,3 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
-

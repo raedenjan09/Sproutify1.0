@@ -1,14 +1,20 @@
 // backend/utils/emailTemplates.js
 
+const PRIMARY_GREEN = '#2E7D32';
+const SOFT_GREEN = '#E8F5E9';
+
+const formatPeso = (amount) => `&#8369;${Number(amount || 0).toFixed(2)}`;
+
 const generateOrderEmailTemplate = (order, user, status) => {
   const baseTemplate = `
     <!DOCTYPE html>
     <html>
     <head>
+      <meta charset="UTF-8" />
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #4F46E5; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header { background: ${PRIMARY_GREEN}; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
         .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
         .order-info { background: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
         .status-badge { 
@@ -25,16 +31,16 @@ const generateOrderEmailTemplate = (order, user, status) => {
         .delivered { background: #D1E7DD; color: #0F5132; }
         .product-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
         .product-table th, .product-table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-        .product-table th { background: #f5f5f5; }
+        .product-table th { background: ${SOFT_GREEN}; color: ${PRIMARY_GREEN}; }
         .total-section { background: white; padding: 15px; border-radius: 5px; margin-top: 15px; }
         .footer { text-align: center; margin-top: 20px; padding: 20px; color: #666; font-size: 12px; }
-        .pdf-notice { background: #e7f3ff; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #4F46E5; }
+        .pdf-notice { background: ${SOFT_GREEN}; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid ${PRIMARY_GREEN}; }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
-          <h1>HarmoniaHub</h1>
+          <h1>Sproutify</h1>
           <h2>Order Update</h2>
         </div>
         <div class="content">
@@ -76,18 +82,18 @@ const generateOrderEmailTemplate = (order, user, status) => {
                 <tr>
                   <td>${item.name}</td>
                   <td>${item.quantity}</td>
-                  <td>$${item.price.toFixed(2)}</td>
-                  <td>$${(item.quantity * item.price).toFixed(2)}</td>
+                  <td>${formatPeso(item.price)}</td>
+                  <td>${formatPeso(item.quantity * item.price)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
           
           <div class="total-section">
-            <p><strong>Items Price:</strong> $${order.itemsPrice.toFixed(2)}</p>
-            <p><strong>Tax Price:</strong> $${order.taxPrice.toFixed(2)}</p>
-            <p><strong>Shipping Price:</strong> $${order.shippingPrice.toFixed(2)}</p>
-            <p><strong>Total Price:</strong> $${order.totalPrice.toFixed(2)}</p>
+            <p><strong>Items Price:</strong> ${formatPeso(order.itemsPrice)}</p>
+            <p><strong>Tax Price:</strong> ${formatPeso(order.taxPrice)}</p>
+            <p><strong>Shipping Price:</strong> ${formatPeso(order.shippingPrice)}</p>
+            <p><strong>Total Price:</strong> ${formatPeso(order.totalPrice)}</p>
           </div>
         </div>
       `;
@@ -118,17 +124,17 @@ const generateOrderEmailTemplate = (order, user, status) => {
                 <tr>
                   <td>${item.name}</td>
                   <td>${item.quantity}</td>
-                  <td>$${item.price.toFixed(2)}</td>
+                  <td>${formatPeso(item.price)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
           
           <div class="total-section">
-            <p><strong>Items Price:</strong> $${order.itemsPrice.toFixed(2)}</p>
-            <p><strong>Tax Price:</strong> $${order.taxPrice.toFixed(2)}</p>
-            <p><strong>Shipping Price:</strong> $${order.shippingPrice.toFixed(2)}</p>
-            <p><strong>Total Price:</strong> $${order.totalPrice.toFixed(2)}</p>
+            <p><strong>Items Price:</strong> ${formatPeso(order.itemsPrice)}</p>
+            <p><strong>Tax Price:</strong> ${formatPeso(order.taxPrice)}</p>
+            <p><strong>Shipping Price:</strong> ${formatPeso(order.shippingPrice)}</p>
+            <p><strong>Total Price:</strong> ${formatPeso(order.totalPrice)}</p>
           </div>
         </div>
       `;
@@ -151,10 +157,10 @@ const generateOrderEmailTemplate = (order, user, status) => {
         <div class="order-info">
           <div class="status-badge delivered">${status}</div>
           <p>Congratulations! Your order <strong>#${order._id}</strong> has been successfully delivered.</p>
-          <p>We hope you enjoy your products! Thank you for shopping with HarmoniaHub.</p>
+          <p>We hope you enjoy your products! Thank you for shopping with Sproutify.</p>
           
           <div class="pdf-notice">
-            <p><strong>📎 Your order receipt is attached as a PDF file!</strong></p>
+            <p><strong>Your order receipt is attached as a PDF file.</strong></p>
             <p>Look for the download button or paperclip icon in your email client to download the receipt.</p>
             <p><strong>In Mailtrap:</strong> Check the "Attachments" section below this email to download the PDF receipt.</p>
           </div>
@@ -174,18 +180,18 @@ const generateOrderEmailTemplate = (order, user, status) => {
                 <tr>
                   <td>${item.name}</td>
                   <td>${item.quantity}</td>
-                  <td>$${item.price.toFixed(2)}</td>
-                  <td>$${(item.quantity * item.price).toFixed(2)}</td>
+                  <td>${formatPeso(item.price)}</td>
+                  <td>${formatPeso(item.quantity * item.price)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
           
           <div class="total-section">
-            <p><strong>Items Price:</strong> $${order.itemsPrice.toFixed(2)}</p>
-            <p><strong>Tax Price:</strong> $${order.taxPrice.toFixed(2)}</p>
-            <p><strong>Shipping Price:</strong> $${order.shippingPrice.toFixed(2)}</p>
-            <p><strong>Total Price:</strong> $${order.totalPrice.toFixed(2)}</p>
+            <p><strong>Items Price:</strong> ${formatPeso(order.itemsPrice)}</p>
+            <p><strong>Tax Price:</strong> ${formatPeso(order.taxPrice)}</p>
+            <p><strong>Shipping Price:</strong> ${formatPeso(order.shippingPrice)}</p>
+            <p><strong>Total Price:</strong> ${formatPeso(order.totalPrice)}</p>
           </div>
           
           <p><strong>Delivered at:</strong> ${new Date(order.deliveredAt).toLocaleString()}</p>
@@ -198,7 +204,7 @@ const generateOrderEmailTemplate = (order, user, status) => {
           <p>If you have any questions, please contact our support team.</p>
           <div class="footer">
             <p>Thank you for choosing Sproutify!</p>
-            <p>© 2024 Sproutify. All rights reserved.</p>
+            <p>&copy; 2024 Sproutify. All rights reserved.</p>
           </div>
         </div>
       </div>

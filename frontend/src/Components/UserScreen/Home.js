@@ -1,5 +1,5 @@
 // Sproutify/frontend/src/Components/UserScreen/Home.js
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,14 @@ import {
   FlatList,
   Modal,
   Animated,
+  Platform,
 } from 'react-native';
 import axios from 'axios';
+import * as Notifications from 'expo-notifications';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { getUser, getToken } from '../../utils/helper';
+import { getOrderedProductImageUrls } from '../../utils/productImages';
 import UserDrawer from './UserDrawer';
 import Header from '../layouts/Header';
 
@@ -82,11 +86,8 @@ const THEME = {
 // ─── Product Image Carousel ───────────────────────────────────────────────────
 const ProductImageCarousel = ({ images, onCardPress }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  const validImages = images && images.length > 0 && images.some(img => img && (img.url || typeof img === 'string'));
-  const urls = validImages 
-    ? images.filter(img => img && (img.url || typeof img === 'string')).map(img => img.url || img) 
-    : [];
+  const urls = getOrderedProductImageUrls(images);
+  const validImages = urls.length > 0;
 
   if (!validImages || urls.length === 0) {
     return (
@@ -172,6 +173,7 @@ export default function HomeScreen({ navigation }) {
   const [cart,             setCart]             = useState([]);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [toastMessage,     setToastMessage]     = useState('');
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   
   // Review states
   const [productReviews, setProductReviews] = useState({});
@@ -180,6 +182,33 @@ export default function HomeScreen({ navigation }) {
   const flatListRef    = useRef(null);
   const autoSlideTimer = useRef(null);
   const toastOpacity   = useRef(new Animated.Value(0)).current;
+  const notificationListener = useRef(null);
+  const notificationResponseListener = useRef(null);
+
+  const fetchUnreadNotificationCount = useCallback(async () => {
+    try {
+      const token = await getToken();
+
+      if (!token) {
+        setUnreadNotificationCount(0);
+        return;
+      }
+
+      const response = await axios.get(
+        `${BACKEND_URL}/api/v1/users/notifications`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { type: 'ORDER_STATUS_UPDATE' },
+          timeout: 5000,
+        }
+      );
+
+      setUnreadNotificationCount(response.data?.unreadCount || 0);
+    } catch (error) {
+      console.error('Error fetching unread notification count:', error);
+      setUnreadNotificationCount(0);
+    }
+  }, []);
 
   const availableCategories = useMemo(() => {
     const dynamicCategories = products
@@ -211,6 +240,32 @@ export default function HomeScreen({ navigation }) {
       fetchAllProductReviews();
     }
   }, [products]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      return undefined;
+    }
+
+    notificationListener.current = Notifications.addNotificationReceivedListener(() => {
+      fetchUnreadNotificationCount();
+    });
+
+    notificationResponseListener.current =
+      Notifications.addNotificationResponseReceivedListener(() => {
+        fetchUnreadNotificationCount();
+      });
+
+    return () => {
+      notificationListener.current?.remove();
+      notificationResponseListener.current?.remove();
+    };
+  }, [fetchUnreadNotificationCount]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchUnreadNotificationCount();
+    }, [fetchUnreadNotificationCount])
+  );
 
   const startAutoSlide = () => {
     stopAutoSlide();
@@ -250,7 +305,7 @@ export default function HomeScreen({ navigation }) {
       setUser(userData);
       const token = await getToken();
       if (!token) { navigation.reset({ index: 0, routes: [{ name: 'Login' }] }); return; }
-      await Promise.all([fetchProducts(), fetchCart()]);
+      await Promise.all([fetchProducts(), fetchCart(), fetchUnreadNotificationCount()]);
     } catch (e) {
       console.error('Error loading initial data:', e);
     } finally {
@@ -506,6 +561,7 @@ export default function HomeScreen({ navigation }) {
           user={user}
           onPressProfile={() => navigation.navigate('Profile')}
           onPressNotifications={() => navigation.navigate('OrderNotification')}
+          notificationCount={unreadNotificationCount}
         />
 
         <ScrollView

@@ -35,7 +35,13 @@ const getGreeting = () => {
   return 'Good evening';
 };
 
-const Header = ({ variant = 'default', user, onPressProfile, onPressNotifications }) => {
+const Header = ({
+  variant = 'default',
+  user,
+  onPressProfile,
+  onPressNotifications,
+  notificationCount = 0,
+}) => {
   const greeting = useMemo(() => getGreeting(), []);
 
   if (variant !== 'home') {
@@ -75,6 +81,13 @@ const Header = ({ variant = 'default', user, onPressProfile, onPressNotification
           activeOpacity={0.85}
         >
           <Icon name="notifications-none" size={22} color={THEME.colors.text} />
+          {notificationCount > 0 && (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>
+                {notificationCount > 99 ? '99+' : notificationCount}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -89,9 +102,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingTop: 8,
-    paddingBottom: 14,
+    paddingHorizontal: 16,
+    paddingTop: 0,
+    paddingBottom: 16,
     backgroundColor: THEME.colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: THEME.colors.border,
@@ -102,9 +115,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatarButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: THEME.colors.border,
@@ -121,37 +134,56 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.accentSoft,
   },
   avatarFallbackText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
     color: THEME.colors.accent,
   },
   greetingWrap: {
-    marginLeft: 12,
+    marginLeft: 10,
     flex: 1,
   },
   greetingText: {
-    fontSize: 13,
+    fontSize: 12,
     color: THEME.colors.muted,
     fontWeight: '600',
   },
   nameText: {
-    marginTop: 2,
+    marginTop: 1,
     fontSize: 20,
     fontWeight: '800',
     color: THEME.colors.text,
   },
   iconButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
     backgroundColor: '#F7F4EE',
     borderWidth: 1,
     borderColor: THEME.colors.border,
-    marginLeft: 12,
+    marginLeft: 10,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#D9485F',
+    borderWidth: 1.5,
+    borderColor: THEME.colors.surface,
+  },
+  notificationBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });
 
 export default Header;
-
