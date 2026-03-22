@@ -3,6 +3,7 @@ const { expo } = require('./app.json');
 module.exports = () => {
   const facebookAppId = process.env.EXPO_PUBLIC_FACEBOOK_APP_ID;
   const facebookClientToken = process.env.EXPO_PUBLIC_FACEBOOK_CLIENT_TOKEN;
+  const googleServicesFile = process.env.GOOGLE_SERVICES_JSON || expo.android?.googleServicesFile;
   const plugins = [...(expo.plugins || [])];
 
   if (facebookAppId) {
@@ -28,6 +29,10 @@ module.exports = () => {
 
   return {
     ...expo,
+    android: {
+      ...expo.android,
+      ...(googleServicesFile ? { googleServicesFile } : {}),
+    },
     plugins,
   };
 };

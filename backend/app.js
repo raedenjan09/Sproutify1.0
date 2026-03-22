@@ -2,6 +2,16 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
+app.set('trust proxy', 1);
+
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.ADMIN_URL,
+  ...(process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+].filter(Boolean);
 
 // ========== DYNAMIC CORS CONFIGURATION ==========
 const corsOptions = {
@@ -12,12 +22,7 @@ const corsOptions = {
     }
     
     // Production: Only allow specific origins
-    const allowedOrigins = [
-      'https://your-production-domain.com', // Your production frontend
-      'https://admin.your-domain.com'       // Your admin panel
-    ];
-    
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn('CORS blocked origin:', origin);
@@ -72,6 +77,14 @@ app.get('/api/v1/health', (req, res) => {
     port: process.env.PORT,
     clientOrigin: req.headers.origin || 'No origin (likely mobile app)',
     clientIP: req.ip
+  });
+});
+
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Sproutify backend is online.',
+    health: '/api/v1/health',
   });
 });
 

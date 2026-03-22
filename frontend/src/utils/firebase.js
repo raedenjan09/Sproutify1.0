@@ -11,15 +11,25 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const requiredFirebaseConfig = ['apiKey', 'authDomain', 'projectId', 'appId'];
+const hasFirebaseConfig = requiredFirebaseConfig.every((key) => firebaseConfig[key]);
+
+const app = hasFirebaseConfig
+  ? (getApps().length ? getApp() : initializeApp(firebaseConfig))
+  : null;
 
 let firebaseAuth;
-try {
-  firebaseAuth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
-  });
-} catch (error) {
-  firebaseAuth = getAuth(app);
+if (app) {
+  try {
+    firebaseAuth = initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
+  } catch (error) {
+    firebaseAuth = getAuth(app);
+  }
+} else {
+  console.warn('Firebase config is incomplete. Social login is disabled for this build.');
+  firebaseAuth = null;
 }
 
 export { app, firebaseAuth };

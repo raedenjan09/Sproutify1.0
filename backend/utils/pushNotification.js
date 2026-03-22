@@ -1,8 +1,19 @@
 // backend/utils/pushNotification.js
-const { Expo } = require('expo-server-sdk');
+let expoModulePromise;
+let expoClientPromise;
 
-// Create a new Expo SDK client
-const expo = new Expo();
+const getExpoModule = async () => {
+  expoModulePromise = expoModulePromise || import('expo-server-sdk');
+  return expoModulePromise;
+};
+
+const getExpoClient = async () => {
+  if (!expoClientPromise) {
+    expoClientPromise = getExpoModule().then(({ Expo }) => new Expo());
+  }
+
+  return expoClientPromise;
+};
 
 /**
  * Send push notification to a single device
@@ -14,44 +25,43 @@ const expo = new Expo();
  */
 exports.sendPushNotification = async (pushToken, title, body, data = {}) => {
   try {
-    console.log('📱 Preparing push notification...');
+    const { Expo } = await getExpoModule();
+    const expo = await getExpoClient();
+
+    console.log('Preparing push notification...');
     console.log('Token:', pushToken ? pushToken.substring(0, 20) + '...' : 'none');
     console.log('Title:', title);
     console.log('Body:', body);
 
-    // Check if the push token is valid
     if (!Expo.isExpoPushToken(pushToken)) {
-      console.error(`❌ Invalid Expo push token: ${pushToken}`);
+      console.error(`Invalid Expo push token: ${pushToken}`);
       throw new Error(`Invalid Expo push token: ${pushToken}`);
     }
 
-    // Create the notification message
     const message = {
       to: pushToken,
       sound: 'default',
-      title: title,
-      body: body,
-      data: data,
+      title,
+      body,
+      data,
       priority: 'high',
-      channelId: 'order-updates', // For Android
+      channelId: 'order-updates',
     };
 
-    console.log('📨 Sending push message:', JSON.stringify(message, null, 2));
+    console.log('Sending push message:', JSON.stringify(message, null, 2));
 
-    // Send the notification
     const ticket = await expo.sendPushNotificationsAsync([message]);
-    
-    console.log('✅ Push notification ticket:', JSON.stringify(ticket, null, 2));
-    
-    // Check for errors in the ticket
+
+    console.log('Push notification ticket:', JSON.stringify(ticket, null, 2));
+
     if (ticket[0].status === 'error') {
-      console.error('❌ Push notification error:', ticket[0].message);
+      console.error('Push notification error:', ticket[0].message);
       throw new Error(ticket[0].message);
     }
 
     return ticket;
   } catch (error) {
-    console.error('❌ Error in sendPushNotification:', error);
+    console.error('Error in sendPushNotification:', error);
     throw error;
   }
 };
@@ -63,15 +73,16 @@ exports.sendPushNotification = async (pushToken, title, body, data = {}) => {
  */
 exports.sendMultiplePushNotifications = async (messages) => {
   try {
-    // Validate all tokens first
-    const validMessages = messages.filter(msg => Expo.isExpoPushToken(msg.to));
-    
+    const { Expo } = await getExpoModule();
+    const expo = await getExpoClient();
+
+    const validMessages = messages.filter((msg) => Expo.isExpoPushToken(msg.to));
+
     if (validMessages.length === 0) {
       console.log('No valid push tokens found');
       return [];
     }
 
-    // Send notifications in chunks (Expo recommends chunks of 100)
     const chunks = expo.chunkPushNotifications(validMessages);
     const tickets = [];
 

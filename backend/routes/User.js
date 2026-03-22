@@ -7,6 +7,7 @@ const {
   firebaseGoogleAuth,
   firebaseFacebookAuth,
   forgotPassword,
+  getResetPasswordPage,
   resetPassword,
   changePassword,
   verifyEmail,
@@ -38,6 +39,7 @@ router.post('/firebase/auth/facebook', firebaseFacebookAuth);
 
 // ================= PASSWORD RESET =================
 router.post('/forgot-password', forgotPassword);
+router.get('/reset-password/:token', getResetPasswordPage);
 router.put('/reset-password/:token', resetPassword);
 
 // ================= CHANGE PASSWORD =================

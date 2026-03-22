@@ -99,6 +99,14 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleGoogleLogin = async () => {
+    if (!firebaseAuth) {
+      Alert.alert(
+        'Google Login Not Available',
+        'This build is missing Firebase configuration. Rebuild the app with the Expo environment variables set.'
+      );
+      return;
+    }
+
     if (!process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID) {
       Alert.alert(
         'Google Login Not Configured',
@@ -152,6 +160,15 @@ export default function LoginScreen({ navigation }) {
         return;
       }
 
+      const googleErrorText = `${error?.code || ''} ${error?.message || ''}`.toUpperCase();
+      if (googleErrorText.includes('DEVELOPER_ERROR') || googleErrorText.includes('CODE 10')) {
+        Alert.alert(
+          'Google Login Setup Needed',
+          'This Android build is signed with a release key that is not registered in Firebase Google Sign-In yet. Add the current release SHA-1/SHA-256 to your Firebase Android app, download a new google-services.json, and rebuild.'
+        );
+        return;
+      }
+
       const message = error.response?.data?.message || error.message || 'Google sign-in failed';
       Alert.alert('Google Login Failed', message);
     } finally {
@@ -160,6 +177,14 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleFacebookLogin = async () => {
+    if (!firebaseAuth) {
+      Alert.alert(
+        'Facebook Login Not Available',
+        'This build is missing Firebase configuration. Rebuild the app with the Expo environment variables set.'
+      );
+      return;
+    }
+
     if (!process.env.EXPO_PUBLIC_FACEBOOK_APP_ID) {
       Alert.alert(
         'Facebook Login Not Configured',
@@ -195,6 +220,16 @@ export default function LoginScreen({ navigation }) {
       await persistAuthenticatedUser(response.data, 'Facebook login successful');
     } catch (error) {
       console.error('Facebook login error:', error);
+
+      const facebookErrorText = `${error?.code || ''} ${error?.message || ''}`.toLowerCase();
+      if (facebookErrorText.includes('invalid key hash')) {
+        Alert.alert(
+          'Facebook Login Setup Needed',
+          'This Android build key hash is not registered in your Meta app yet. Add the current release key hash in Meta for Developers, then rebuild the app.'
+        );
+        return;
+      }
+
       const message = error.response?.data?.message || error.message || 'Facebook sign-in failed';
       Alert.alert('Facebook Login Failed', message);
     } finally {

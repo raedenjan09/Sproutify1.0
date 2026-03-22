@@ -2,7 +2,9 @@ const User = require('../models/User');
 const crypto = require('crypto');
 const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/Cloudinary');
 const Mailer = require('../utils/Mailer');
-const admin = require('../utils/firebaseAdmin');
+const { ensureFirebaseAdmin } = require('../utils/firebaseAdmin');
+const { getPublicBaseUrl } = require('../utils/publicUrl');
+const { renderResetPasswordPage, renderStatusPage } = require('../utils/authPages');
 
 // ========== REGISTER USER ========== 
 exports.registerUser = async (req, res) => {
@@ -42,7 +44,7 @@ exports.registerUser = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     // ✅ FIXED: include '/users' in the URL
-    const verificationUrl = `${req.protocol}://${req.get('host')}/api/v1/users/verify-email/${verificationToken}`;
+    const verificationUrl = `${getPublicBaseUrl(req)}/api/v1/users/verify-email/${verificationToken}`;
 
     const message = `
       <h2>Welcome to ${process.env.APP_NAME}</h2>
@@ -303,6 +305,7 @@ exports.firebaseGoogleAuth = async (req, res) => {
     const { idToken } = req.body;
     if (!idToken) return res.status(400).json({ message: 'Firebase ID token is required' });
 
+    const admin = ensureFirebaseAdmin();
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const { email, uid, name, picture } = decodedToken;
 
@@ -350,6 +353,7 @@ exports.firebaseFacebookAuth = async (req, res) => {
     const { idToken } = req.body;
     if (!idToken) return res.status(400).json({ message: 'Firebase ID token is required' });
 
+    const admin = ensureFirebaseAdmin();
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const { email, uid, name, picture } = decodedToken;
 
@@ -392,9 +396,7 @@ exports.forgotPassword = async (req, res) => {
     const resetToken = user.getResetPasswordToken();
     await user.save({ validateBeforeSave: false });
 
-    // Use FRONTEND_URL env variable or fallback to localhost
-    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const resetUrl = `${FRONTEND_URL}/reset-password/${resetToken}`;
+    const resetUrl = `${getPublicBaseUrl(req)}/api/v1/users/reset-password/${resetToken}`;
 
     const message = `
       <h2>Password Reset Request</h2>
@@ -413,6 +415,10 @@ exports.forgotPassword = async (req, res) => {
     console.error('❌ FORGOT PASSWORD ERROR:', error);
     res.status(500).json({ success: false, message: error.message });
   }
+};
+
+exports.getResetPasswordPage = async (req, res) => {
+  res.status(200).send(renderResetPasswordPage({ token: req.params.token }));
 };
 
 
@@ -494,7 +500,15 @@ exports.changePassword = async (req, res) => {
 exports.verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
-    if (!token) return res.status(400).send('Verification token missing');
+    if (!token) {
+      return res.status(400).send(
+        renderStatusPage({
+          title: 'Verification failed',
+          message: 'This verification link is missing its token.',
+          tone: 'error',
+        })
+      );
+    }
 
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
@@ -503,19 +517,36 @@ exports.verifyEmail = async (req, res) => {
       emailVerificationExpire: { $gt: Date.now() },
     });
 
-    if (!user) return res.status(400).send('Invalid or expired verification token');
+    if (!user) {
+      return res.status(400).send(
+        renderStatusPage({
+          title: 'Verification failed',
+          message: 'This verification link is invalid or has already expired.',
+          tone: 'error',
+        })
+      );
+    }
 
     user.isVerified = true;
     user.emailVerificationToken = undefined;
     user.emailVerificationExpire = undefined;
     await user.save({ validateBeforeSave: false });
 
-    // Redirect to frontend page
-    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
-    return res.redirect(`${FRONTEND_URL}/email-verified`);
+    return res.status(200).send(
+      renderStatusPage({
+        title: 'Email verified',
+        message: 'Your email has been verified successfully. You can head back to the app and sign in.',
+      })
+    );
   } catch (error) {
     console.error('❌ EMAIL VERIFICATION ERROR:', error);
-    return res.status(500).send('Server error');
+    return res.status(500).send(
+      renderStatusPage({
+        title: 'Verification failed',
+        message: 'We could not verify this email link. It may be invalid or expired.',
+        tone: 'error',
+      })
+    );
   }
 };
 
