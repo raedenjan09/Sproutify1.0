@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   TextInput,
@@ -7,12 +7,7 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { FontAwesome, MaterialIcons as Icon } from '@expo/vector-icons';
@@ -20,6 +15,8 @@ import { FacebookAuthProvider, GoogleAuthProvider, signInWithCredential } from '
 import { authenticate } from '../../utils/helper';
 import { firebaseAuth } from '../../utils/firebase';
 import { registerForPushNotificationsAsync } from '../../hooks/usePushNotifications';
+import AuthScreenShell from '../layouts/AuthScreenShell';
+import gardenTheme from '../../theme/gardenTheme';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
@@ -40,28 +37,6 @@ const getFacebookSdkModule = () => {
     console.error('Facebook SDK native module is unavailable in this runtime:', error);
     return null;
   }
-};
-
-const THEME = {
-  colors: {
-    background: '#F5F3EE',
-    backgroundSoft: '#FBF9F4',
-    surface: '#FFFFFF',
-    text: '#1F2A1F',
-    muted: '#657565',
-    accent: '#2F6B3B',
-    accentDark: '#1E4E2B',
-    accentSoft: '#E4F0E4',
-    accentSoftAlt: '#EEF5EA',
-    border: '#E3DDD2',
-    subtleBorder: '#EEE7DD',
-    googleBorder: '#D7DDD7',
-    googleText: '#283128',
-    facebookBg: '#1877F2',
-    facebookBorder: '#D8E4FA',
-    pillText: '#35513A',
-    shadow: '#1A221A',
-  },
 };
 
 export default function LoginScreen({ navigation }) {
@@ -297,284 +272,192 @@ export default function LoginScreen({ navigation }) {
   const isBusy = loading || googleLoading || facebookLoading;
   const socialLoginDisabled = isBusy || isExpoGo;
   const loginSubtitle = isExpoGo
-    ? 'Email login works in Expo Go. Google and Facebook sign-in need a development build or APK.'
-    : 'Use your email or continue with Google or Facebook.';
+    ? 'Email sign-in is available in Expo Go. Google and Facebook sign-in need a development build or APK.'
+    : 'Use your email or continue with Google or Facebook to return to your saved garden essentials.';
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar backgroundColor={THEME.colors.background} barStyle="dark-content" />
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+    <AuthScreenShell
+      navigation={navigation}
+      brandIcon="spa"
+      eyebrow="Garden welcome back"
+      title="Step back into your calmer garden routine."
+      subtitle="Track orders, revisit favorite plants, and shop tools that make everyday care feel lighter."
+      highlights={[
+        { icon: 'eco', label: 'Leafy picks and care goods' },
+        { icon: 'local-shipping', label: 'Order updates in one place' },
+        { icon: 'shopping-basket', label: 'Quick return to your cart' },
+      ]}
+      footer={<Text style={styles.footerText}>By signing in, you agree to our Terms of Service and Privacy Policy.</Text>}
+    >
+      <View style={styles.formCard}>
+        <Text style={styles.formTitle}>Sign in</Text>
+        <Text style={styles.formSubtitle}>{loginSubtitle}</Text>
+
+        {isExpoGo ? (
+          <View style={styles.noticeCard}>
+            <Icon name="construction" size={18} color={gardenTheme.colors.clay} />
+            <Text style={styles.noticeText}>Social login is disabled in Expo Go for this project.</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Email address</Text>
+          <View style={styles.inputContainer}>
+            <Icon name="mail-outline" size={20} color={gardenTheme.colors.muted} style={styles.inputIcon} />
+            <TextInput
+              placeholder="you@example.com"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoCorrect={false}
+              style={styles.input}
+              placeholderTextColor="#8FA08B"
+            />
+          </View>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <View style={styles.passwordHeader}>
+            <Text style={styles.fieldLabel}>Password</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ForgotPassword')}
+              style={styles.inlineLinkButton}
+            >
+              <Text style={styles.inlineLinkText}>Forgot password?</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.inputContainer}>
+            <Icon name="lock-outline" size={20} color={gardenTheme.colors.muted} style={styles.inputIcon} />
+            <TextInput
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              style={[styles.input, styles.passwordInput]}
+              placeholderTextColor="#8FA08B"
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Icon
+                name={showPassword ? 'visibility' : 'visibility-off'}
+                size={20}
+                color={gardenTheme.colors.muted}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.primaryButton, isBusy && styles.buttonDisabled]}
+          onPress={handleLogin}
+          disabled={isBusy}
+          activeOpacity={0.88}
         >
-          <View style={styles.brandHeader}>
-            <View style={styles.brandBadge}>
-              <Icon name="spa" size={26} color={THEME.colors.accentDark} />
-            </View>
-            <Text style={styles.brandTitle}>Sproutify</Text>
-            <Text style={styles.brandSubtitle}>Plants, tools, and growing essentials.</Text>
-          </View>
+          {loading ? (
+            <ActivityIndicator color={gardenTheme.colors.white} />
+          ) : (
+            <>
+              <Text style={styles.primaryButtonText}>Sign In</Text>
+              <Icon name="arrow-forward" size={18} color={gardenTheme.colors.white} />
+            </>
+          )}
+        </TouchableOpacity>
 
-          <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Sign in</Text>
-            <Text style={styles.formSubtitle}>{loginSubtitle}</Text>
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or continue with</Text>
+          <View style={styles.dividerLine} />
+        </View>
 
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Email address</Text>
-              <View style={styles.inputContainer}>
-                <Icon name="mail-outline" size={20} color={THEME.colors.muted} style={styles.inputIcon} />
-                <TextInput
-                  placeholder="you@example.com"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  autoCorrect={false}
-                  style={styles.input}
-                  placeholderTextColor="#93A094"
-                />
-              </View>
-            </View>
+        <TouchableOpacity
+          style={[styles.socialButton, styles.googleButton, socialLoginDisabled && styles.buttonDisabled]}
+          onPress={handleGoogleLogin}
+          disabled={socialLoginDisabled}
+          activeOpacity={0.88}
+        >
+          {googleLoading ? (
+            <ActivityIndicator color={gardenTheme.colors.textStrong} />
+          ) : (
+            <>
+              <FontAwesome name="google" size={18} color="#DB4437" />
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </>
+          )}
+        </TouchableOpacity>
 
-            <View style={styles.fieldGroup}>
-              <View style={styles.passwordHeader}>
-                <Text style={styles.fieldLabel}>Password</Text>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('ForgotPassword')}
-                  style={styles.inlineLinkButton}
-                >
-                  <Text style={styles.inlineLinkText}>Forgot password?</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.inputContainer}>
-                <Icon name="lock-outline" size={20} color={THEME.colors.muted} style={styles.inputIcon} />
-                <TextInput
-                  placeholder="Enter your password"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  style={[styles.input, styles.passwordInput]}
-                  placeholderTextColor="#93A094"
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Icon
-                    name={showPassword ? 'visibility' : 'visibility-off'}
-                    size={20}
-                    color={THEME.colors.muted}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
+        <TouchableOpacity
+          style={[styles.socialButton, styles.facebookButton, socialLoginDisabled && styles.buttonDisabled]}
+          onPress={handleFacebookLogin}
+          disabled={socialLoginDisabled}
+          activeOpacity={0.88}
+        >
+          {facebookLoading ? (
+            <ActivityIndicator color={gardenTheme.colors.white} />
+          ) : (
+            <>
+              <FontAwesome name="facebook" size={18} color={gardenTheme.colors.white} />
+              <Text style={styles.facebookButtonText}>Continue with Facebook</Text>
+            </>
+          )}
+        </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.primaryButton, isBusy && styles.buttonDisabled]}
-              onPress={handleLogin}
-              disabled={isBusy}
-              activeOpacity={0.88}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <>
-                  <Text style={styles.primaryButtonText}>Sign In</Text>
-                  <Icon name="arrow-forward" size={18} color="#FFFFFF" />
-                </>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or continue with</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.socialButton, styles.googleButton, socialLoginDisabled && styles.buttonDisabled]}
-              onPress={handleGoogleLogin}
-              disabled={socialLoginDisabled}
-              activeOpacity={0.88}
-            >
-              {googleLoading ? (
-                <ActivityIndicator color={THEME.colors.googleText} />
-              ) : (
-                <>
-                  <FontAwesome name="google" size={18} color="#DB4437" />
-                  <Text style={styles.googleButtonText}>Continue with Google</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.socialButton, styles.facebookButton, socialLoginDisabled && styles.buttonDisabled]}
-              onPress={handleFacebookLogin}
-              disabled={socialLoginDisabled}
-              activeOpacity={0.88}
-            >
-              {facebookLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <>
-                  <FontAwesome name="facebook" size={18} color="#FFFFFF" />
-                  <Text style={styles.facebookButtonText}>Continue with Facebook</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.signUpContainer}>
-              <Text style={styles.signUpText}>New here?</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.signUpLink}>Create an account</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>By signing in, you agree to our Terms of Service and Privacy Policy.</Text>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        <View style={styles.signUpContainer}>
+          <Text style={styles.signUpText}>New here?</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text style={styles.signUpLink}>Create an account</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </AuthScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: THEME.colors.background,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: THEME.colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 28,
-    justifyContent: 'center',
-  },
-  brandHeader: {
-    alignItems: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 16,
-  },
-  brandBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: THEME.colors.accentSoft,
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
-    marginBottom: 12,
-  },
-  brandTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: THEME.colors.accentDark,
-  },
-  brandSubtitle: {
-    marginTop: 6,
-    fontSize: 14,
-    lineHeight: 20,
-    color: THEME.colors.muted,
-    textAlign: 'center',
-  },
-  heroCard: {
-    backgroundColor: THEME.colors.accentSoftAlt,
-    borderRadius: 28,
-    padding: 22,
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
-    marginBottom: 18,
-  },
-  heroBadge: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: THEME.colors.surface,
-    borderWidth: 1,
-    borderColor: THEME.colors.subtleBorder,
-    marginBottom: 16,
-  },
-  heroBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: THEME.colors.accentDark,
-  },
-  heroTitle: {
-    fontSize: 30,
-    lineHeight: 36,
-    fontWeight: '800',
-    color: THEME.colors.text,
-  },
-  heroSubtitle: {
-    marginTop: 10,
-    fontSize: 15,
-    lineHeight: 22,
-    color: THEME.colors.muted,
-  },
-  highlightRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 18,
-  },
-  highlightPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 999,
-    backgroundColor: THEME.colors.accentSoft,
-  },
-  highlightText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: THEME.colors.pillText,
-  },
   formCard: {
-    backgroundColor: THEME.colors.surface,
-    borderRadius: 28,
+    backgroundColor: gardenTheme.colors.surface,
+    borderRadius: gardenTheme.radii.lg,
     padding: 22,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
-    shadowColor: THEME.colors.shadow,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 4,
+    borderColor: gardenTheme.colors.border,
+    ...gardenTheme.shadows.medium,
   },
   formTitle: {
     fontSize: 24,
-    fontWeight: '800',
-    color: THEME.colors.text,
+    fontWeight: '900',
+    color: gardenTheme.colors.textStrong,
   },
   formSubtitle: {
     marginTop: 6,
-    marginBottom: 20,
+    marginBottom: 18,
     fontSize: 14,
     lineHeight: 21,
-    color: THEME.colors.muted,
+    color: gardenTheme.colors.muted,
+  },
+  noticeCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 14,
+    borderRadius: gardenTheme.radii.md,
+    marginBottom: 18,
+    backgroundColor: gardenTheme.colors.claySoft,
+    borderWidth: 1,
+    borderColor: gardenTheme.colors.borderStrong,
+  },
+  noticeText: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 13,
+    lineHeight: 20,
+    color: gardenTheme.colors.textStrong,
+    fontWeight: '700',
   },
   fieldGroup: {
     marginBottom: 16,
   },
   fieldLabel: {
     fontSize: 13,
-    fontWeight: '700',
-    color: THEME.colors.text,
+    fontWeight: '800',
+    color: gardenTheme.colors.textStrong,
     marginBottom: 8,
   },
   passwordHeader: {
@@ -588,18 +471,18 @@ const styles = StyleSheet.create({
   },
   inlineLinkText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: THEME.colors.accentDark,
+    fontWeight: '800',
+    color: gardenTheme.colors.accentStrong,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: 56,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
-    borderRadius: 18,
+    borderColor: gardenTheme.colors.border,
+    borderRadius: 20,
     paddingHorizontal: 14,
-    backgroundColor: THEME.colors.backgroundSoft,
+    backgroundColor: gardenTheme.colors.canvasSoft,
   },
   inputIcon: {
     marginRight: 10,
@@ -607,7 +490,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: THEME.colors.text,
+    color: gardenTheme.colors.textStrong,
     paddingVertical: 14,
   },
   passwordInput: {
@@ -616,17 +499,17 @@ const styles = StyleSheet.create({
   primaryButton: {
     marginTop: 8,
     minHeight: 56,
-    borderRadius: 18,
-    backgroundColor: THEME.colors.accent,
+    borderRadius: 20,
+    backgroundColor: gardenTheme.colors.accentStrong,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 10,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: gardenTheme.colors.white,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   buttonDisabled: {
     opacity: 0.65,
@@ -634,25 +517,25 @@ const styles = StyleSheet.create({
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 18,
-    marginBottom: 8,
+    marginTop: 20,
+    marginBottom: 10,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: THEME.colors.border,
+    backgroundColor: gardenTheme.colors.border,
   },
   dividerText: {
     marginHorizontal: 10,
     fontSize: 12,
-    color: THEME.colors.muted,
-    fontWeight: '700',
+    color: gardenTheme.colors.muted,
+    fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
   socialButton: {
     minHeight: 54,
-    borderRadius: 18,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -661,22 +544,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   googleButton: {
-    borderColor: THEME.colors.googleBorder,
-    backgroundColor: '#FFFFFF',
+    borderColor: gardenTheme.colors.border,
+    backgroundColor: gardenTheme.colors.white,
   },
   googleButtonText: {
-    color: THEME.colors.googleText,
+    color: gardenTheme.colors.textStrong,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   facebookButton: {
-    borderColor: THEME.colors.facebookBorder,
-    backgroundColor: THEME.colors.facebookBg,
+    borderColor: '#DAE5F7',
+    backgroundColor: '#295FAE',
   },
   facebookButtonText: {
-    color: '#FFFFFF',
+    color: gardenTheme.colors.white,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   signUpContainer: {
     flexDirection: 'row',
@@ -687,22 +570,17 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     fontSize: 14,
-    color: THEME.colors.muted,
+    color: gardenTheme.colors.muted,
   },
   signUpLink: {
     fontSize: 14,
-    color: THEME.colors.accentDark,
-    fontWeight: '800',
-  },
-  footer: {
-    marginTop: 18,
-    paddingHorizontal: 12,
-    alignItems: 'center',
+    color: gardenTheme.colors.accentStrong,
+    fontWeight: '900',
   },
   footerText: {
     fontSize: 12,
     lineHeight: 18,
     textAlign: 'center',
-    color: '#839183',
+    color: '#7A8878',
   },
 });

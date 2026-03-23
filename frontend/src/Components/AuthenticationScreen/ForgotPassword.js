@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   TextInput,
@@ -7,32 +7,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
-  KeyboardAvoidingView,
-  ScrollView,
-  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
+import AuthScreenShell from '../layouts/AuthScreenShell';
+import gardenTheme from '../../theme/gardenTheme';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
-
-const THEME = {
-  colors: {
-    background: '#F5F3EE',
-    backgroundSoft: '#FBF9F4',
-    surface: '#FFFFFF',
-    text: '#1F2A1F',
-    muted: '#657565',
-    accent: '#2F6B3B',
-    accentDark: '#1E4E2B',
-    accentSoft: '#E4F0E4',
-    border: '#E3DDD2',
-    danger: '#C75B39',
-    success: '#2F7D4B',
-    shadow: '#1A221A',
-  },
-};
 
 export default function ForgotPassword({ navigation }) {
   const [email, setEmail] = useState('');
@@ -44,6 +25,7 @@ export default function ForgotPassword({ navigation }) {
     if (Platform.OS === 'android') {
       return BACKEND_URL.replace('localhost', '10.0.2.2');
     }
+
     return BACKEND_URL;
   };
 
@@ -58,231 +40,143 @@ export default function ForgotPassword({ navigation }) {
     setMessage('');
     setError('');
 
-    const url = `${getBackendUrl()}/api/v1/users/forgot-password`;
-    console.log('Forgot password URL:', url);
-
     try {
-      const response = await axios.post(url, { email });
-      console.log('Forgot password response:', response.data);
+      const response = await axios.post(`${getBackendUrl()}/api/v1/users/forgot-password`, {
+        email,
+      });
 
       if (response.data.success) {
         setMessage(response.data.message || 'Password reset email sent successfully.');
       } else {
         setError(response.data.message || 'Something went wrong. Please try again.');
       }
-    } catch (err) {
-      console.error('Forgot password error:', err.response?.data || err.message);
-      setError(err.response?.data?.message || 'Server error. Please try again.');
+    } catch (requestError) {
+      console.error('Forgot password error:', requestError.response?.data || requestError.message);
+      setError(requestError.response?.data?.message || 'Server error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar backgroundColor={THEME.colors.background} barStyle="dark-content" />
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+    <AuthScreenShell
+      navigation={navigation}
+      showBackButton
+      topBarTitle="Reset password"
+      brandIcon="lock-reset"
+      eyebrow="Garden account recovery"
+      title="Regrow access to your account."
+      subtitle="Enter your email and we will send a secure reset link so you can get back to your orders and plant plans."
+      highlights={[
+        { icon: 'verified-user', label: 'Secure recovery link' },
+        { icon: 'mail-outline', label: 'Sent to your account email' },
+      ]}
+    >
+      <View style={styles.formCard}>
+        <Text style={styles.formTitle}>Email recovery</Text>
+        <Text style={styles.formSubtitle}>
+          We will send a reset link to the address tied to your Sproutify account.
+        </Text>
+
+        {message ? <Text style={styles.success}>{message}</Text> : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Email address</Text>
+          <View style={styles.inputContainer}>
+            <Icon name="mail-outline" size={20} color={gardenTheme.colors.muted} style={styles.inputIcon} />
+            <TextInput
+              placeholder="you@example.com"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              style={styles.input}
+              placeholderTextColor="#8FA08B"
+            />
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.primaryButton, loading && styles.buttonDisabled]}
+          onPress={handleSubmit}
+          disabled={loading}
+          activeOpacity={0.88}
         >
-          <View style={styles.topBar}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.85}>
-              <Icon name="arrow-back" size={22} color={THEME.colors.text} />
-            </TouchableOpacity>
-            <Text style={styles.topBarTitle}>Reset password</Text>
-            <View style={styles.topBarSpacer} />
-          </View>
+          {loading ? (
+            <ActivityIndicator color={gardenTheme.colors.white} />
+          ) : (
+            <>
+              <Text style={styles.primaryButtonText}>Send Reset Email</Text>
+              <Icon name="arrow-forward" size={18} color={gardenTheme.colors.white} />
+            </>
+          )}
+        </TouchableOpacity>
 
-          <View style={styles.brandHeader}>
-            <View style={styles.brandBadge}>
-              <Icon name="lock-reset" size={28} color={THEME.colors.accentDark} />
-            </View>
-            <Text style={styles.brandTitle}>Forgot your password?</Text>
-            <Text style={styles.brandSubtitle}>
-              Enter the email tied to your account and we&apos;ll send reset instructions.
-            </Text>
-          </View>
-
-          <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Email recovery</Text>
-            <Text style={styles.formSubtitle}>
-              We&apos;ll send a secure reset link so you can get back into Sproutify.
-            </Text>
-
-            {message ? <Text style={styles.success}>{message}</Text> : null}
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Email address</Text>
-              <View style={styles.inputContainer}>
-                <Icon name="mail-outline" size={20} color={THEME.colors.muted} style={styles.inputIcon} />
-                <TextInput
-                  placeholder="you@example.com"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  keyboardType="email-address"
-                  style={styles.input}
-                  placeholderTextColor="#93A094"
-                />
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.primaryButton, loading && styles.buttonDisabled]}
-              onPress={handleSubmit}
-              disabled={loading}
-              activeOpacity={0.88}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <>
-                  <Text style={styles.primaryButtonText}>Send Reset Email</Text>
-                  <Icon name="arrow-forward" size={18} color="#FFFFFF" />
-                </>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.secondaryAction} activeOpacity={0.85}>
-              <Icon name="arrow-back" size={18} color={THEME.colors.accentDark} />
-              <Text style={styles.secondaryActionText}>Back to login</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.secondaryAction}
+          activeOpacity={0.85}
+        >
+          <Icon name="arrow-back" size={18} color={gardenTheme.colors.accentStrong} />
+          <Text style={styles.secondaryActionText}>Back to login</Text>
+        </TouchableOpacity>
+      </View>
+    </AuthScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: THEME.colors.background,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: THEME.colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 28,
-    justifyContent: 'center',
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: THEME.colors.surface,
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
-  },
-  topBarTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: THEME.colors.text,
-  },
-  topBarSpacer: {
-    width: 42,
-  },
-  brandHeader: {
-    alignItems: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 16,
-  },
-  brandBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: THEME.colors.accentSoft,
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
-    marginBottom: 12,
-  },
-  brandTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: THEME.colors.accentDark,
-    textAlign: 'center',
-  },
-  brandSubtitle: {
-    marginTop: 6,
-    fontSize: 14,
-    lineHeight: 20,
-    color: THEME.colors.muted,
-    textAlign: 'center',
-  },
   formCard: {
-    backgroundColor: THEME.colors.surface,
-    borderRadius: 28,
+    backgroundColor: gardenTheme.colors.surface,
+    borderRadius: gardenTheme.radii.lg,
     padding: 22,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
-    shadowColor: THEME.colors.shadow,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 4,
+    borderColor: gardenTheme.colors.border,
+    ...gardenTheme.shadows.medium,
   },
   formTitle: {
     fontSize: 24,
-    fontWeight: '800',
-    color: THEME.colors.text,
+    fontWeight: '900',
+    color: gardenTheme.colors.textStrong,
   },
   formSubtitle: {
     marginTop: 6,
     marginBottom: 18,
     fontSize: 14,
     lineHeight: 21,
-    color: THEME.colors.muted,
+    color: gardenTheme.colors.muted,
   },
   success: {
     marginBottom: 14,
-    borderRadius: 14,
+    borderRadius: gardenTheme.radii.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: THEME.colors.success,
-    backgroundColor: '#EDF8F0',
+    color: gardenTheme.colors.success,
+    backgroundColor: '#EDF7EF',
     borderWidth: 1,
-    borderColor: '#CAE7D0',
-    fontWeight: '600',
+    borderColor: '#CCE4D1',
+    fontWeight: '700',
   },
   error: {
     marginBottom: 14,
-    borderRadius: 14,
+    borderRadius: gardenTheme.radii.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: THEME.colors.danger,
+    color: gardenTheme.colors.danger,
     backgroundColor: '#FCEFEA',
     borderWidth: 1,
-    borderColor: '#F2D3C6',
-    fontWeight: '600',
+    borderColor: '#F0D2C9',
+    fontWeight: '700',
   },
   fieldGroup: {
     marginBottom: 18,
   },
   fieldLabel: {
     fontSize: 13,
-    fontWeight: '700',
-    color: THEME.colors.text,
+    fontWeight: '800',
+    color: gardenTheme.colors.textStrong,
     marginBottom: 8,
   },
   inputContainer: {
@@ -290,10 +184,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 56,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
-    borderRadius: 18,
+    borderColor: gardenTheme.colors.border,
+    borderRadius: 20,
     paddingHorizontal: 14,
-    backgroundColor: THEME.colors.backgroundSoft,
+    backgroundColor: gardenTheme.colors.canvasSoft,
   },
   inputIcon: {
     marginRight: 10,
@@ -301,22 +195,22 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: THEME.colors.text,
+    color: gardenTheme.colors.textStrong,
     paddingVertical: 14,
   },
   primaryButton: {
     minHeight: 56,
-    borderRadius: 18,
-    backgroundColor: THEME.colors.accent,
+    borderRadius: 20,
+    backgroundColor: gardenTheme.colors.accentStrong,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 10,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: gardenTheme.colors.white,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   buttonDisabled: {
     opacity: 0.65,
@@ -330,7 +224,7 @@ const styles = StyleSheet.create({
   },
   secondaryActionText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: THEME.colors.accentDark,
+    fontWeight: '800',
+    color: gardenTheme.colors.accentStrong,
   },
 });

@@ -8,17 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
-
-const THEME = {
-  colors: {
-    surface: '#FFFFFF',
-    border: '#E6E0D9',
-    text: '#1F2A1F',
-    muted: '#6B7C6A',
-    accent: '#2E7D32',
-    accentSoft: '#E6F2E6',
-  },
-};
+import gardenTheme from '../../theme/gardenTheme';
 
 const getInitials = (name) => {
   if (!name) return 'S';
@@ -53,42 +43,48 @@ const Header = ({
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.profileSection}
-          onPress={onPressProfile}
-          activeOpacity={0.85}
-        >
-          <View style={styles.avatarButton}>
-            {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-            ) : (
-              <View style={styles.avatarFallback}>
-                <Text style={styles.avatarFallbackText}>{getInitials(user?.name)}</Text>
+      <View style={styles.headerFrame}>
+        <View style={styles.headerCard}>
+          <TouchableOpacity
+            style={styles.profileSection}
+            onPress={onPressProfile}
+            activeOpacity={0.85}
+          >
+            <View style={styles.avatarButton}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+              ) : (
+                <View style={styles.avatarFallback}>
+                  <Text style={styles.avatarFallbackText}>{getInitials(user?.name)}</Text>
+                </View>
+              )}
+              <View style={styles.avatarLeaf}>
+                <Icon name="eco" size={11} color={gardenTheme.colors.white} />
+              </View>
+            </View>
+
+            <View style={styles.greetingWrap}>
+              <Text style={styles.brandText}>Sproutify garden</Text>
+              <Text style={styles.nameText}>{firstName}</Text>
+              <Text style={styles.greetingText}>{greeting}. Find something green for today.</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={onPressNotifications}
+            activeOpacity={0.85}
+          >
+            <Icon name="notifications-none" size={22} color={gardenTheme.colors.textStrong} />
+            {notificationCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {notificationCount > 99 ? '99+' : notificationCount}
+                </Text>
               </View>
             )}
-          </View>
-
-          <View style={styles.greetingWrap}>
-            <Text style={styles.greetingText}>{greeting}</Text>
-            <Text style={styles.nameText}>{firstName}</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={onPressNotifications}
-          activeOpacity={0.85}
-        >
-          <Icon name="notifications-none" size={22} color={THEME.colors.text} />
-          {notificationCount > 0 && (
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationBadgeText}>
-                {notificationCount > 99 ? '99+' : notificationCount}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -96,18 +92,24 @@ const Header = ({
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: THEME.colors.surface,
+    backgroundColor: gardenTheme.colors.canvas,
   },
-  header: {
+  headerFrame: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    backgroundColor: gardenTheme.colors.canvas,
+  },
+  headerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 0,
-    paddingBottom: 16,
-    backgroundColor: THEME.colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
+    paddingVertical: 16,
+    borderRadius: gardenTheme.radii.lg,
+    backgroundColor: gardenTheme.colors.surface,
+    borderWidth: 1,
+    borderColor: gardenTheme.colors.border,
+    ...gardenTheme.shadows.soft,
   },
   profileSection: {
     flexDirection: 'row',
@@ -115,74 +117,99 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatarButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
-    backgroundColor: THEME.colors.accentSoft,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    overflow: 'visible',
+    position: 'relative',
   },
   avatarImage: {
     width: '100%',
     height: '100%',
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: gardenTheme.colors.border,
   },
   avatarFallback: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.colors.accentSoft,
+    borderRadius: 28,
+    backgroundColor: gardenTheme.colors.accentSoft,
+    borderWidth: 1,
+    borderColor: gardenTheme.colors.border,
   },
   avatarFallbackText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: THEME.colors.accent,
+    fontSize: 17,
+    fontWeight: '900',
+    color: gardenTheme.colors.accentStrong,
+  },
+  avatarLeaf: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: gardenTheme.colors.accentStrong,
+    borderWidth: 1,
+    borderColor: gardenTheme.colors.surface,
   },
   greetingWrap: {
-    marginLeft: 10,
+    marginLeft: 12,
     flex: 1,
   },
-  greetingText: {
-    fontSize: 12,
-    color: THEME.colors.muted,
-    fontWeight: '600',
+  brandText: {
+    fontSize: 11,
+    color: gardenTheme.colors.accentStrong,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   nameText: {
-    marginTop: 1,
-    fontSize: 20,
-    fontWeight: '800',
-    color: THEME.colors.text,
+    marginTop: 4,
+    fontSize: 22,
+    fontWeight: '900',
+    color: gardenTheme.colors.textStrong,
+  },
+  greetingText: {
+    marginTop: 2,
+    fontSize: 13,
+    color: gardenTheme.colors.muted,
+    fontWeight: '700',
   },
   iconButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    backgroundColor: '#F7F4EE',
+    backgroundColor: gardenTheme.colors.accentGlow,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: gardenTheme.colors.border,
     marginLeft: 10,
   },
   notificationBadge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
+    top: -3,
+    right: -3,
     minWidth: 18,
     height: 18,
     paddingHorizontal: 4,
     borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#D9485F',
+    backgroundColor: gardenTheme.colors.rose,
     borderWidth: 1.5,
-    borderColor: THEME.colors.surface,
+    borderColor: gardenTheme.colors.surface,
   },
   notificationBadgeText: {
     fontSize: 10,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontWeight: '900',
+    color: gardenTheme.colors.white,
   },
 });
 

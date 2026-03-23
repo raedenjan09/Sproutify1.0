@@ -10,6 +10,7 @@ import AdminStack from './AdminStack';
 import OrderNotification from '../UserScreen/Notification/OrderNotification';
 import OrderDetails from '../UserScreen/Orders/OrderDetails';
 import { getUser, onAuthChange } from '../../utils/helper';
+import gardenTheme, { gardenNavigationTheme } from '../../theme/gardenTheme';
 
 const Stack = createNativeStackNavigator();
 
@@ -80,7 +81,7 @@ const AppNavigator = forwardRef((props, ref) => {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6200ee" />
+        <ActivityIndicator size="large" color={gardenTheme.colors.accentStrong} />
       </View>
     );
   }
@@ -93,11 +94,17 @@ const AppNavigator = forwardRef((props, ref) => {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer
         ref={setNavigationRef}
+        theme={gardenNavigationTheme}
         onReady={() => {
           console.log('Navigation container is ready');
         }}
       >
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: gardenTheme.colors.canvas },
+          }}
+        >
           {/* Main stack based on authentication */}
           <Stack.Screen 
             name="MainApp" 
@@ -112,7 +119,15 @@ const AppNavigator = forwardRef((props, ref) => {
               headerShown: true,
               title: 'Notifications',
               headerBackTitle: 'Back',
-              headerTintColor: '#2c3e50',
+              headerTintColor: gardenTheme.colors.accentStrong,
+              headerStyle: {
+                backgroundColor: gardenTheme.colors.surface,
+              },
+              headerShadowVisible: false,
+              headerTitleStyle: {
+                fontWeight: '800',
+                color: gardenTheme.colors.textStrong,
+              },
             }}
           />
           
@@ -123,7 +138,15 @@ const AppNavigator = forwardRef((props, ref) => {
               headerShown: true,
               title: 'Order Details',
               headerBackTitle: 'Back',
-              headerTintColor: '#2c3e50',
+              headerTintColor: gardenTheme.colors.accentStrong,
+              headerStyle: {
+                backgroundColor: gardenTheme.colors.surface,
+              },
+              headerShadowVisible: false,
+              headerTitleStyle: {
+                fontWeight: '800',
+                color: gardenTheme.colors.textStrong,
+              },
             }}
           />
         </Stack.Navigator>
@@ -137,7 +160,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: gardenTheme.colors.canvas,
   },
 });
 

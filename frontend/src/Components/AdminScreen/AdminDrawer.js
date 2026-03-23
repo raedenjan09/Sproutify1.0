@@ -1,5 +1,5 @@
 // Sproutify/frontend/src/Components/AdminScreen/AdminDrawer.js
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -43,7 +43,6 @@ const AdminDrawer = ({ children, onLogout }) => {
 
   const handleMenuItemPress = (itemName) => {
     setSelectedItem(itemName);
-    console.log(`Navigating to ${itemName}`);
     
     switch(itemName) {
       case 'User':
@@ -83,12 +82,11 @@ const AdminDrawer = ({ children, onLogout }) => {
 
   return (
     <View style={styles.container}>
-      {/* Header with Hamburger Menu */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
           onPress={toggleDrawer} 
           style={styles.hamburgerButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Icon name="menu" size={30} color="#333" />
         </TouchableOpacity>
@@ -96,35 +94,28 @@ const AdminDrawer = ({ children, onLogout }) => {
         <View style={styles.placeholder} />
       </View>
 
-      {/* Main Content - Add collapsable={false} to prevent re-rendering */}
       <View style={styles.content} collapsable={false}>
         {children}
       </View>
 
-      {/* Overlay - Use conditional rendering instead of display style */}
       {isDrawerOpen && (
         <TouchableWithoutFeedback onPress={toggleDrawer}>
           <Animated.View 
-            style={[
-              styles.overlay,
-              { opacity: overlayOpacity }
-            ]} 
+            style={[styles.overlay, { opacity: overlayOpacity }]} 
           />
         </TouchableWithoutFeedback>
       )}
 
-      {/* Drawer - Use conditional rendering */}
       {isDrawerOpen && (
         <Animated.View
           style={[
             styles.drawer,
-            {
-              transform: [{ translateX }],
-            },
+            { transform: [{ translateX }] },
           ]}
         >
+          {/* 🌿 UPDATED HEADER */}
           <View style={styles.drawerHeader}>
-            <Icon name="paw" size={40} color="#FF6B6B" />
+            <Icon name="sprout" size={42} color="#4CAF50" />
             <Text style={styles.drawerHeaderText}>Sproutify</Text>
             <Text style={styles.drawerSubHeaderText}>Admin Panel</Text>
           </View>
@@ -138,12 +129,11 @@ const AdminDrawer = ({ children, onLogout }) => {
                   selectedItem === item.name && styles.drawerItemSelected,
                 ]}
                 onPress={() => handleMenuItemPress(item.name)}
-                activeOpacity={0.7}
               >
                 <Icon
                   name={item.icon}
                   size={24}
-                  color={selectedItem === item.name ? '#FF6B6B' : '#666'}
+                  color={selectedItem === item.name ? '#4CAF50' : '#666'}
                 />
                 <Text
                   style={[
@@ -158,17 +148,14 @@ const AdminDrawer = ({ children, onLogout }) => {
           </ScrollView>
 
           <View style={styles.drawerFooter}>
-            <TouchableOpacity 
-              style={styles.drawerFooterItem}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.drawerFooterItem}>
               <Icon name="cog" size={20} color="#666" />
               <Text style={styles.drawerFooterText}>Settings</Text>
             </TouchableOpacity>
+
             <TouchableOpacity 
               style={styles.drawerFooterItem}
               onPress={onLogout}
-              activeOpacity={0.7}
             >
               <Icon name="logout" size={20} color="#666" />
               <Text style={styles.drawerFooterText}>Logout</Text>
@@ -181,10 +168,8 @@ const AdminDrawer = ({ children, onLogout }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -194,27 +179,21 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     backgroundColor: '#fff',
     elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
     zIndex: 10,
   },
-  hamburgerButton: {
-    padding: 5,
-  },
+
+  hamburgerButton: { padding: 5 },
+
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
   },
-  placeholder: {
-    width: 40,
-  },
-  content: {
-    flex: 1,
-    zIndex: 1,
-  },
+
+  placeholder: { width: 40 },
+
+  content: { flex: 1, zIndex: 1 },
+
   overlay: {
     position: 'absolute',
     top: 0,
@@ -224,6 +203,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     zIndex: 20,
   },
+
   drawer: {
     position: 'absolute',
     top: 0,
@@ -232,35 +212,33 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#fff',
     elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     zIndex: 30,
   },
+
   drawerHeader: {
     padding: 20,
     paddingTop: 50,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#f1f8f4',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     alignItems: 'center',
   },
+
   drawerHeaderText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#2e7d32',
     marginTop: 10,
   },
+
   drawerSubHeaderText: {
     fontSize: 14,
     color: '#666',
     marginTop: 5,
   },
-  drawerContent: {
-    flex: 1,
-    paddingTop: 10,
-  },
+
+  drawerContent: { flex: 1, paddingTop: 10 },
+
   drawerItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -269,28 +247,34 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginVertical: 2,
   },
+
   drawerItemSelected: {
-    backgroundColor: '#FFE5E5',
+    backgroundColor: '#E8F5E9',
   },
+
   drawerItemText: {
     marginLeft: 15,
     fontSize: 16,
     color: '#666',
   },
+
   drawerItemTextSelected: {
-    color: '#FF6B6B',
+    color: '#4CAF50',
     fontWeight: '600',
   },
+
   drawerFooter: {
     borderTopWidth: 1,
     borderTopColor: '#eee',
     padding: 15,
   },
+
   drawerFooterItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
   },
+
   drawerFooterText: {
     marginLeft: 10,
     fontSize: 14,

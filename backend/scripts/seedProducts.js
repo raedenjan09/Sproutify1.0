@@ -23,187 +23,226 @@ const imageFor = (slug, label, bg = 'E8F2EC', fg = '1F2A1F') => ({
 });
 
 const sampleProducts = [
-  {
-    name: 'Monstera Deliciosa',
-    price: 1299,
-    discountedPrice: 1149,
-    discountPercentage: 17,
-    discountStartDate: saleStart,
-    discountEndDate: saleEnd,
-    isOnSale: true,
-    description: 'Statement indoor plant with broad split leaves that thrives in bright, indirect light.',
-    category: 'Plants',
-    stock: 24,
-    images: [imageFor('monstera-deliciosa', 'Monstera Deliciosa', 'D9EED8')],
-  },
-  {
-    name: 'Snake Plant Laurentii',
-    price: 649,
-    discountedPrice: null,
-    discountPercentage: null,
-    discountStartDate: null,
-    discountEndDate: null,
-    isOnSale: false,
-    description: 'Low-maintenance upright plant that handles low light and irregular watering with ease.',
-    category: 'Plants',
-    stock: 31,
-    images: [imageFor('snake-plant-laurentii', 'Snake Plant Laurentii', 'F3ECD8')],
-  },
+
+  // 🌱 SEEDS & PROPAGATION
   {
     name: 'Basil Starter Seed Pack',
     price: 149,
-    discountedPrice: null,
-    discountPercentage: null,
-    discountStartDate: null,
-    discountEndDate: null,
-    isOnSale: false,
-    description: 'Fast-germinating sweet basil seeds suited for kitchen windows, beds, and patio containers.',
     category: 'Seeds & Propagation',
     stock: 88,
-    images: [imageFor('basil-starter-seed-pack', 'Basil Starter Seed Pack', 'DCE9F5')],
+    description: 'Fast-growing basil seeds for kitchen gardening.',
+    images: [imageFor('basil-seeds', 'Basil Seeds')],
+    rating: 4.5,
+    brand: 'Sproutify',
   },
   {
-    name: 'Seedling Tray Propagation Kit',
+    name: 'Cherry Tomato Seed Pack',
+    price: 159,
+    category: 'Seeds & Propagation',
+    stock: 90,
+    description: 'Sweet cherry tomatoes ideal for pots.',
+    images: [imageFor('tomato-seeds', 'Tomato Seeds', 'FFE4E1')],
+  },
+  {
+    name: 'Seedling Tray Kit',
     price: 329,
     discountedPrice: 279,
     discountPercentage: 15,
     discountStartDate: saleStart,
     discountEndDate: saleEnd,
     isOnSale: true,
-    description: 'Reusable starter tray with humidity dome and cell inserts for cuttings and young seedlings.',
     category: 'Seeds & Propagation',
     stock: 36,
-    images: [imageFor('seedling-tray-propagation-kit', 'Seedling Tray Kit', 'E7E1F6')],
+    description: 'Starter tray with humidity dome.',
+    images: [imageFor('seed-tray', 'Seed Tray', 'E7E1F6')],
   },
+  {
+    name: 'Germination Heat Mat',
+    price: 799,
+    category: 'Seeds & Propagation',
+    stock: 25,
+    description: 'Improves seed sprouting success.',
+    images: [imageFor('heat-mat', 'Heat Mat')],
+  },
+
+  // 🪴 POTS & PLANTERS
   {
     name: 'Terracotta Pot Set',
     price: 499,
-    discountedPrice: null,
-    discountPercentage: null,
-    discountStartDate: null,
-    discountEndDate: null,
-    isOnSale: false,
-    description: 'Breathable clay planters in assorted sizes for herbs, foliage plants, and patio styling.',
     category: 'Pots & Planters',
     stock: 42,
-    images: [imageFor('terracotta-pot-set', 'Terracotta Pot Set', 'F8E2DD')],
+    description: 'Classic clay pots for plants.',
+    images: [imageFor('terracotta', 'Terracotta Pots')],
   },
   {
-    name: 'Self-Watering Balcony Planter',
+    name: 'Self-Watering Planter',
     price: 899,
-    discountedPrice: null,
-    discountPercentage: null,
-    discountStartDate: null,
-    discountEndDate: null,
-    isOnSale: false,
-    description: 'Rectangular planter with reservoir base to keep balcony greens evenly watered.',
     category: 'Pots & Planters',
     stock: 19,
-    images: [imageFor('self-watering-balcony-planter', 'Balcony Planter', 'FCEBCF')],
+    description: 'Keeps plants hydrated automatically.',
+    images: [imageFor('self-watering', 'Self Watering')],
   },
   {
-    name: 'All-Purpose Potting Mix',
+    name: 'Ceramic Pot',
+    price: 599,
+    category: 'Pots & Planters',
+    stock: 30,
+    description: 'Modern decorative ceramic planter.',
+    images: [imageFor('ceramic-pot', 'Ceramic Pot')],
+  },
+  {
+    name: 'Hanging Macrame Planter',
+    price: 349,
+    category: 'Pots & Planters',
+    stock: 38,
+    description: 'Stylish hanging plant holder.',
+    images: [imageFor('macrame', 'Macrame')],
+  },
+
+  // 🌾 SOIL & FERTILIZERS
+  {
+    name: 'Potting Mix',
     price: 289,
-    discountedPrice: null,
-    discountPercentage: null,
-    discountStartDate: null,
-    discountEndDate: null,
-    isOnSale: false,
-    description: 'Balanced soil blend for indoor plants and container gardens with strong drainage support.',
     category: 'Soil & Fertilizers',
     stock: 53,
-    images: [imageFor('all-purpose-potting-mix', 'Potting Mix', 'D8F1EA')],
+    description: 'All-purpose soil mix.',
+    images: [imageFor('soil', 'Soil Mix')],
   },
   {
-    name: 'Organic Bloom Fertilizer Pellets',
+    name: 'Organic Fertilizer Pellets',
     price: 359,
-    discountedPrice: 679,
+    discountedPrice: 299,
     discountPercentage: 15,
     discountStartDate: saleStart,
     discountEndDate: saleEnd,
     isOnSale: true,
-    description: 'Slow-release organic feed formulated to support flowering plants and stronger blooms.',
     category: 'Soil & Fertilizers',
     stock: 28,
-    images: [imageFor('organic-bloom-fertilizer-pellets', 'Bloom Fertilizer', 'E3F2D3')],
+    description: 'Slow-release nutrients.',
+    images: [imageFor('fertilizer', 'Fertilizer')],
   },
   {
-    name: 'Galvanized Watering Can 2L',
+    name: 'Vermicast',
+    price: 199,
+    category: 'Soil & Fertilizers',
+    stock: 60,
+    description: 'Organic worm cast fertilizer.',
+    images: [imageFor('vermicast', 'Vermicast')],
+  },
+  {
+    name: 'Coco Peat',
+    price: 149,
+    category: 'Soil & Fertilizers',
+    stock: 70,
+    description: 'Lightweight soil alternative.',
+    images: [imageFor('coco', 'Coco Peat')],
+  },
+
+  // 💧 WATERING & IRRIGATION
+  {
+    name: 'Watering Can',
     price: 549,
-    discountedPrice: null,
-    discountPercentage: null,
-    discountStartDate: null,
-    discountEndDate: null,
-    isOnSale: false,
-    description: 'Slim-spout watering can designed for accurate indoor watering and easy daily use.',
     category: 'Watering & Irrigation',
     stock: 34,
-    images: [imageFor('galvanized-watering-can-2l', 'Watering Can 2L', 'E8F4E1')],
+    description: 'Precision watering can.',
+    images: [imageFor('watering-can', 'Watering Can')],
   },
   {
-    name: 'Adjustable Drip Irrigation Kit',
+    name: 'Drip Irrigation Kit',
     price: 1199,
-    discountedPrice: null,
-    discountPercentage: null,
-    discountStartDate: null,
-    discountEndDate: null,
-    isOnSale: false,
-    description: 'Expandable drip set for raised beds and pots with adjustable emitters for steady watering.',
     category: 'Watering & Irrigation',
     stock: 17,
-    images: [imageFor('adjustable-drip-irrigation-kit', 'Drip Irrigation Kit', 'DDEBF7')],
+    description: 'Efficient watering system.',
+    images: [imageFor('drip', 'Drip Kit')],
   },
   {
-    name: 'Stainless Hand Trowel',
+    name: 'Plant Mister',
+    price: 199,
+    category: 'Watering & Irrigation',
+    stock: 45,
+    description: 'Fine mist spray bottle.',
+    images: [imageFor('mister', 'Mister')],
+  },
+  {
+    name: 'Water Timer',
+    price: 999,
+    category: 'Watering & Irrigation',
+    stock: 20,
+    description: 'Automated watering timer.',
+    images: [imageFor('timer', 'Water Timer')],
+  },
+
+  // 🛠️ GARDEN TOOLS
+  {
+    name: 'Hand Trowel',
     price: 229,
-    discountedPrice: null,
-    discountPercentage: null,
-    discountStartDate: null,
-    discountEndDate: null,
-    isOnSale: false,
-    description: 'Rust-resistant hand trowel for repotting, loosening soil, and transplanting seedlings.',
     category: 'Garden Tools',
     stock: 61,
-    images: [imageFor('stainless-hand-trowel', 'Hand Trowel', 'F2E7D8')],
+    description: 'Basic gardening tool.',
+    images: [imageFor('trowel', 'Trowel')],
   },
   {
-    name: 'Bypass Pruning Shears',
+    name: 'Pruning Shears',
     price: 799,
     discountedPrice: 679,
     discountPercentage: 13,
     discountStartDate: saleStart,
     discountEndDate: saleEnd,
     isOnSale: true,
-    description: 'Comfort-grip pruning shears for trimming stems, deadheading flowers, and light shaping.',
     category: 'Garden Tools',
     stock: 26,
-    images: [imageFor('bypass-pruning-shears', 'Pruning Shears', 'D7EEF7')],
+    description: 'Sharp trimming tool.',
+    images: [imageFor('shears', 'Shears')],
   },
   {
-    name: 'Neem Oil Plant Spray',
+    name: 'Garden Tool Set',
+    price: 499,
+    category: 'Garden Tools',
+    stock: 50,
+    description: '3-piece gardening tools.',
+    images: [imageFor('toolset', 'Tool Set')],
+  },
+  {
+    name: 'Soil pH Meter',
+    price: 699,
+    category: 'Garden Tools',
+    stock: 30,
+    description: 'Measures soil acidity.',
+    images: [imageFor('ph', 'pH Meter')],
+  },
+
+  // 🐛 PEST CONTROL
+  {
+    name: 'Neem Oil Spray',
     price: 319,
-    discountedPrice: null,
-    discountPercentage: null,
-    discountStartDate: null,
-    discountEndDate: null,
-    isOnSale: false,
-    description: 'Ready-to-use plant-safe spray that helps manage common leaf pests on ornamentals and herbs.',
     category: 'Pest Control',
     stock: 40,
-    images: [imageFor('neem-oil-plant-spray', 'Neem Oil Spray', 'E8E6F6')],
+    description: 'Natural pest control spray.',
+    images: [imageFor('neem', 'Neem Oil')],
   },
   {
-    name: 'Yellow Sticky Gnat Traps',
+    name: 'Sticky Traps',
     price: 189,
-    discountedPrice: null,
-    discountPercentage: null,
-    discountStartDate: null,
-    discountEndDate: null,
-    isOnSale: false,
-    description: 'Bright adhesive traps that help control fungus gnats and flying pests around pots.',
     category: 'Pest Control',
     stock: 72,
-    images: [imageFor('yellow-sticky-gnat-traps', 'Sticky Gnat Traps', 'F6E8E1')],
+    description: 'Traps flying insects.',
+    images: [imageFor('traps', 'Sticky Traps')],
+  },
+  {
+    name: 'Insecticidal Soap',
+    price: 259,
+    category: 'Pest Control',
+    stock: 55,
+    description: 'Safe pest removal spray.',
+    images: [imageFor('soap', 'Soap Spray')],
+  },
+  {
+    name: 'Garden Net',
+    price: 399,
+    category: 'Pest Control',
+    stock: 33,
+    description: 'Protect plants from pests.',
+    images: [imageFor('net', 'Garden Net')],
   },
 ];
 
@@ -211,17 +250,17 @@ const shouldReplace = process.argv.includes('--replace');
 
 async function seedProducts() {
   if (!process.env.MONGODB_URI) {
-    throw new Error('MONGODB_URI is missing. Check backend/config/.env');
+    throw new Error('MONGODB_URI is missing.');
   }
 
   await mongoose.connect(process.env.MONGODB_URI);
-  console.log('Connected to MongoDB');
+  console.log('MongoDB connected');
 
   if (shouldReplace) {
     const removed = await Product.deleteMany({
       'images.public_id': { $regex: '^seed/' },
     });
-    console.log(`Removed ${removed.deletedCount} existing seeded products`);
+    console.log(`Removed ${removed.deletedCount} old products`);
   }
 
   let created = 0;
@@ -233,21 +272,19 @@ async function seedProducts() {
     if (existing) {
       Object.assign(existing, sample);
       await existing.save();
-      updated += 1;
+      updated++;
     } else {
       await Product.create(sample);
-      created += 1;
+      created++;
     }
   }
 
-  console.log(`Seed complete: ${created} created, ${updated} updated`);
+  console.log(`Done: ${created} created, ${updated} updated`);
 }
 
 seedProducts()
-  .catch((error) => {
-    console.error('Product seed failed:', error.message);
-    process.exitCode = 1;
+  .catch(err => {
+    console.error(err);
+    process.exit(1);
   })
-  .finally(async () => {
-    await mongoose.disconnect();
-  });
+  .finally(() => mongoose.disconnect());

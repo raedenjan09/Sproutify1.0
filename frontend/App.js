@@ -178,7 +178,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
       <AppNavigator ref={navigationRef} />
     </SafeAreaProvider>
   );

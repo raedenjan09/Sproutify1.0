@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from '../AuthenticationScreen/Login';
 import RegisterScreen from '../AuthenticationScreen/Register';
 import ForgotPassword from '../AuthenticationScreen/ForgotPassword';
+import gardenTheme from '../../theme/gardenTheme';
 
 const Stack = createNativeStackNavigator();
 
@@ -12,10 +13,10 @@ export default function AuthenticationStack() {
     <Stack.Navigator
       initialRouteName="Login"
       screenOptions={{
-        headerShown: false, // Hide headers since your screens have their own headers
-        animation: 'slide_from_right', // Smooth transitions between screens
+        headerShown: false,
+        animation: 'slide_from_right',
         contentStyle: {
-          backgroundColor: '#f5f5f5', // Match your app's background color
+          backgroundColor: gardenTheme.colors.canvas,
         },
       }}
     >
@@ -23,7 +24,7 @@ export default function AuthenticationStack() {
         name="Login" 
         component={LoginScreen} 
         options={{
-          animation: 'fade', // Fade in for login screen
+          animation: 'fade',
         }}
       />
       <Stack.Screen 
@@ -37,7 +38,7 @@ export default function AuthenticationStack() {
         name="ForgotPassword" 
         component={ForgotPassword} 
         options={{
-          animation: 'slide_from_bottom', // Different animation for password recovery
+          animation: 'slide_from_bottom',
         }}
       />
     </Stack.Navigator>

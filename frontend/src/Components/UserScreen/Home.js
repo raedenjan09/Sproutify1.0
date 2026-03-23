@@ -24,63 +24,64 @@ import { getUser, getToken } from '../../utils/helper';
 import { getOrderedProductImageUrls } from '../../utils/productImages';
 import UserDrawer from './UserDrawer';
 import Header from '../layouts/Header';
+import gardenTheme from '../../theme/gardenTheme';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const BANNER_HEIGHT = 200;
+const BANNER_HEIGHT = 260;
 
 const CATEGORIES = ['All'];
 
 const BANNERS = [
   {
     image: require('../sliding/1.jpg'),
-    title: 'Build a calmer growing corner',
-    subtitle: 'Refined plant care, tools, and decor for everyday spaces.',
+    title: 'Turn any corner into a calmer garden retreat',
+    subtitle: 'Browse plants, pots, and styling pieces made for greener homes.',
   },
   {
     image: require('../sliding/2.jpg'),
-    title: 'Everyday essentials that feel intentional',
-    subtitle: 'Shop modern goods for watering, repotting, and styling.',
+    title: 'Root your routine in better care essentials',
+    subtitle: 'Tools, soil, and watering picks chosen for everyday growing.',
   },
   {
     image: require('../sliding/3.jpg'),
-    title: 'Fresh picks for indoor and outdoor setups',
-    subtitle: 'Curated finds that keep your plant routine practical and polished.',
+    title: 'Fresh foliage and seasonal garden finds',
+    subtitle: 'Discover pieces that help your shelves, patios, and nooks feel alive.',
   },
   {
     image: require('../sliding/4.jpg'),
-    title: 'Tools and pieces made for growers',
-    subtitle: 'Discover products that support healthier plants and cleaner spaces.',
+    title: 'Build a softer, healthier plant setup',
+    subtitle: 'Shop practical garden goods without losing the warmth of home styling.',
   },
 ];
 
 const THEME = {
   colors: {
-    bg: '#F5F3EE',
-    surface: '#FFFFFF',
-    surfaceAlt: '#F0F6F0',
-    text: '#1F2A1F',
-    muted: '#6B7C6A',
-    accent: '#2E7D32',
-    accentDark: '#1B5E20',
-    accentSoft: '#E6F2E6',
-    border: '#E6E0D9',
-    sale: '#B45309',
-    saleSoft: '#FFF4E5',
+    bg: gardenTheme.colors.canvas,
+    surface: gardenTheme.colors.surface,
+    surfaceAlt: gardenTheme.colors.surfaceMuted,
+    surfaceGlow: gardenTheme.colors.accentGlow,
+    text: gardenTheme.colors.textStrong,
+    muted: gardenTheme.colors.muted,
+    accent: gardenTheme.colors.accent,
+    accentDark: gardenTheme.colors.accentStrong,
+    accentSoft: gardenTheme.colors.accentSoft,
+    border: gardenTheme.colors.border,
+    sale: gardenTheme.colors.clay,
+    saleSoft: gardenTheme.colors.claySoft,
+    overlay: gardenTheme.colors.overlay,
+    rose: gardenTheme.colors.rose,
+    white: gardenTheme.colors.white,
   },
   radius: {
-    sm: 10,
-    md: 16,
-    lg: 22,
-    pill: 999,
+    sm: gardenTheme.radii.sm,
+    md: gardenTheme.radii.md,
+    lg: gardenTheme.radii.lg,
+    xl: gardenTheme.radii.xl,
+    pill: gardenTheme.radii.pill,
   },
-  space: {
-    xs: 6,
-    sm: 10,
-    md: 14,
-    lg: 18,
-    xl: 24,
-  },
+  space: gardenTheme.spacing,
+  shadows: gardenTheme.shadows,
 };
 
 // ─── Product Image Carousel ───────────────────────────────────────────────────
@@ -106,17 +107,19 @@ const ProductImageCarousel = ({ images, onCardPress }) => {
       {urls.length > 1 && (
         <>
           <TouchableOpacity
-            style={styles.arrowLeft}
+            style={[styles.carouselArrow, styles.carouselArrowLeft]}
             onPress={() => setCurrentIndex(p => (p === 0 ? urls.length - 1 : p - 1))}
             activeOpacity={0.7}
           >
+            <Icon name="chevron-left" size={20} color={THEME.colors.white} />
             <Text style={styles.arrowText}>‹</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.arrowRight}
+            style={[styles.carouselArrow, styles.carouselArrowRight]}
             onPress={() => setCurrentIndex(p => (p === urls.length - 1 ? 0 : p + 1))}
             activeOpacity={0.7}
           >
+            <Icon name="chevron-right" size={20} color={THEME.colors.white} />
             <Text style={styles.arrowText}>›</Text>
           </TouchableOpacity>
           <View style={styles.imageIndicatorContainer} pointerEvents="none">
@@ -140,11 +143,11 @@ const StarRating = ({ rating, size = 12, showRating = false }) => {
     <View style={styles.starRatingContainer}>
       <View style={styles.starsRow}>
         {[...Array(fullStars)].map((_, i) => (
-          <Icon key={`full-${i}`} name="star" size={size} color="#FFD700" />
+          <Icon key={`full-${i}`} name="star" size={size} color="#E5B93B" />
         ))}
-        {halfStar && <Icon name="star-half" size={size} color="#FFD700" />}
+        {halfStar && <Icon name="star-half" size={size} color="#E5B93B" />}
         {[...Array(emptyStars)].map((_, i) => (
-          <Icon key={`empty-${i}`} name="star-border" size={size} color="#ccc" />
+          <Icon key={`empty-${i}`} name="star-border" size={size} color="#C8CEC2" />
         ))}
       </View>
       {showRating && <Text style={styles.ratingText}>({rating.toFixed(1)})</Text>}
@@ -219,6 +222,12 @@ export default function HomeScreen({ navigation }) {
     return dynamicCategories.length ? ['All', ...dynamicCategories] : CATEGORIES;
   }, [products]);
 
+  const heroMetrics = useMemo(() => ([
+    { label: 'Collections', value: Math.max(availableCategories.length - 1, 0) },
+    { label: 'In cart', value: cart.length },
+    { label: 'On sale', value: products.filter(product => product?.isOnSale).length },
+  ]), [availableCategories.length, cart.length, products]);
+
   useEffect(() => {
     loadInitialData();
     startAutoSlide();
@@ -291,7 +300,12 @@ export default function HomeScreen({ navigation }) {
 
   // ── Toast helper ──────────────────────────────────────────────────────────
   const showToast = (message) => {
-    setToastMessage(message);
+    const normalizedMessage = message
+      .replace(/^âœ…\s*"?/, '')
+      .replace(/" added to cart!$/, ' added to cart.')
+      .replace(/^âŒ\s*/, '');
+
+    setToastMessage(normalizedMessage);
     Animated.sequence([
       Animated.timing(toastOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
       Animated.delay(1800),
@@ -452,6 +466,15 @@ export default function HomeScreen({ navigation }) {
     <View style={styles.bannerContainer}>
       <View style={styles.bannerImageFrame}>
         <Image source={item.image} style={styles.bannerImage} />
+        <View style={styles.bannerShade} />
+        <View style={styles.bannerContent}>
+          <View style={styles.bannerBadge}>
+            <Icon name="yard" size={16} color={THEME.colors.white} />
+            <Text style={styles.bannerBadgeText}>Garden edit</Text>
+          </View>
+          <Text style={styles.bannerTitle}>{item.title}</Text>
+          <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
+        </View>
       </View>
     </View>
   );
@@ -480,7 +503,7 @@ export default function HomeScreen({ navigation }) {
         <TouchableOpacity onPress={() => handleProductPress(item)} activeOpacity={0.85}>
           <View style={styles.productInfo}>
             <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-            <Text style={styles.productCategory} numberOfLines={1}>{item.category || 'Uncategorized'}</Text>
+            <Text style={styles.productCategory} numberOfLines={1}>{item.category || 'Garden pick'}</Text>
             
             {/* Rating Display */}
             <View style={styles.reviewSummaryContainer}>
@@ -492,7 +515,7 @@ export default function HomeScreen({ navigation }) {
               ) : isLoadingReview ? (
                 <ActivityIndicator size="small" color={THEME.colors.accent} style={styles.reviewLoader} />
               ) : (
-                <Text style={styles.reviewPlaceholder}>New item</Text>
+                <Text style={styles.reviewPlaceholder}>New arrival</Text>
               )}
             </View>
             
@@ -525,7 +548,7 @@ export default function HomeScreen({ navigation }) {
             <Icon name="add-shopping-cart" size={18} color={THEME.colors.accentDark} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.buyButton} onPress={() => handleBuyNow(item)} activeOpacity={0.82}>
-            <Text style={styles.buyButtonText}>Buy Now</Text>
+            <Text style={styles.buyButtonText}>Bring Home</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -556,6 +579,11 @@ export default function HomeScreen({ navigation }) {
   return (
     <UserDrawer>
       <View style={styles.container}>
+        <View pointerEvents="none" style={styles.backgroundArt}>
+          <View style={[styles.backgroundOrb, styles.backgroundOrbTop]} />
+          <View style={[styles.backgroundOrb, styles.backgroundOrbBottom]} />
+        </View>
+
         <Header
           variant="home"
           user={user}
@@ -568,8 +596,38 @@ export default function HomeScreen({ navigation }) {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={THEME.colors.accentDark}
+              colors={[THEME.colors.accentDark]}
+            />
+          }
         >
+          <View style={styles.heroSection}>
+            <View style={styles.heroPanel}>
+              <View style={styles.heroPanelBadge}>
+                <Icon name="park" size={16} color={THEME.colors.accentDark} />
+                <Text style={styles.heroPanelBadgeText}>Garden marketplace</Text>
+              </View>
+              <Text style={styles.heroPanelTitle}>
+                Build a greener home with plants, care tools, and soft botanical details.
+              </Text>
+              <Text style={styles.heroPanelSubtitle}>
+                Explore a calmer shopping experience designed around growing, styling, and caring for your space.
+              </Text>
+              <View style={styles.heroMetricsRow}>
+                {heroMetrics.map(metric => (
+                  <View key={metric.label} style={styles.heroMetricCard}>
+                    <Text style={styles.heroMetricValue}>{metric.value}</Text>
+                    <Text style={styles.heroMetricLabel}>{metric.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+
           <View style={styles.bannerWrapper}>
             <FlatList
               ref={flatListRef}
@@ -600,7 +658,10 @@ export default function HomeScreen({ navigation }) {
 
           <View style={styles.discoverySection}>
             <View style={styles.productsHeader}>
-              <Text style={styles.productsTitle}>Featured Picks</Text>
+              <View>
+                <Text style={styles.productsEyebrow}>Curated today</Text>
+                <Text style={styles.productsTitle}>Garden picks for every corner</Text>
+              </View>
               <Text style={styles.resultsCount}>{filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'}</Text>
             </View>
 
@@ -704,13 +765,34 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: THEME.colors.bg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: THEME.colors.bg },
   scrollView: { flex: 1 },
-  scrollContent: { paddingBottom: 28 },
+  scrollContent: { paddingBottom: 34 },
+  backgroundArt: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  backgroundOrb: {
+    position: 'absolute',
+    borderRadius: THEME.radius.pill,
+  },
+  backgroundOrbTop: {
+    width: 240,
+    height: 240,
+    top: -84,
+    right: -74,
+    backgroundColor: 'rgba(220,234,215,0.82)',
+  },
+  backgroundOrbBottom: {
+    width: 210,
+    height: 210,
+    bottom: 18,
+    left: -68,
+    backgroundColor: 'rgba(248,232,216,0.72)',
+  },
   toast: {
     position: 'absolute',
-    bottom: 22,
+    bottom: 92,
     left: 18,
     right: 18,
-    backgroundColor: 'rgba(31,42,31,0.92)',
+    backgroundColor: 'rgba(23,49,31,0.94)',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: THEME.radius.md,
@@ -722,7 +804,77 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 6,
   },
-  toastText: { color: '#fff', fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  toastText: { color: THEME.colors.white, fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  heroSection: {
+    paddingHorizontal: 16,
+    marginBottom: 18,
+  },
+  heroPanel: {
+    padding: 22,
+    borderRadius: THEME.radius.xl,
+    backgroundColor: THEME.colors.surface,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    ...THEME.shadows.medium,
+  },
+  heroPanelBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: THEME.radius.pill,
+    backgroundColor: THEME.colors.surfaceGlow,
+    marginBottom: 16,
+  },
+  heroPanelBadgeText: {
+    marginLeft: 6,
+    fontSize: 12,
+    fontWeight: '800',
+    color: THEME.colors.accentDark,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  heroPanelTitle: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '900',
+    color: THEME.colors.text,
+  },
+  heroPanelSubtitle: {
+    marginTop: 10,
+    fontSize: 15,
+    lineHeight: 22,
+    color: THEME.colors.muted,
+  },
+  heroMetricsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 20,
+  },
+  heroMetricCard: {
+    minWidth: 108,
+    flex: 1,
+    padding: 14,
+    borderRadius: THEME.radius.md,
+    backgroundColor: THEME.colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+  },
+  heroMetricValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: THEME.colors.accentDark,
+  },
+  heroMetricLabel: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '800',
+    color: THEME.colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
   discoverySection: {
     marginHorizontal: THEME.space.lg,
     marginBottom: THEME.space.md,
@@ -733,11 +885,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: THEME.colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
+    ...THEME.shadows.soft,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -766,7 +914,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   bannerWrapper: {
-    height: 224,
+    height: 286,
     marginTop: 0,
     marginBottom: THEME.space.lg,
     position: 'relative',
@@ -774,15 +922,62 @@ const styles = StyleSheet.create({
   bannerContainer: { width: SCREEN_WIDTH, height: BANNER_HEIGHT },
   bannerImageFrame: {
     flex: 1,
-    marginHorizontal: 0,
-    borderRadius: 0,
+    marginHorizontal: 16,
+    borderRadius: THEME.radius.xl,
     overflow: 'hidden',
     backgroundColor: THEME.colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.24)',
+  },
+  bannerShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(18,28,17,0.34)',
+  },
+  bannerContent: {
+    position: 'absolute',
+    left: 18,
+    right: 18,
+    bottom: 18,
+    padding: 18,
+    borderRadius: THEME.radius.lg,
+    backgroundColor: 'rgba(20,34,22,0.4)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+  },
+  bannerBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: THEME.radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    marginBottom: 12,
+  },
+  bannerBadgeText: {
+    marginLeft: 6,
+    fontSize: 11,
+    fontWeight: '800',
+    color: THEME.colors.white,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  bannerTitle: {
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: '900',
+    color: THEME.colors.white,
+  },
+  bannerSubtitle: {
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 20,
+    color: 'rgba(255,255,255,0.92)',
   },
   bannerImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   indicatorContainer: {
     position: 'absolute',
-    bottom: 10,
+    bottom: 16,
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'center',
@@ -825,72 +1020,67 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     marginBottom: THEME.space.md,
   },
-  productsTitle: { fontSize: 20, fontWeight: '800', color: THEME.colors.text, marginBottom: 4 },
-  resultsCount: { fontSize: 13, fontWeight: '700', color: THEME.colors.muted },
+  productsEyebrow: {
+    fontSize: 12,
+    color: THEME.colors.accentDark,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  productsTitle: { fontSize: 22, fontWeight: '900', color: THEME.colors.text, marginTop: 4 },
+  resultsCount: { fontSize: 13, fontWeight: '800', color: THEME.colors.muted },
   productsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: THEME.space.md },
   gridItem: { width: '50%', paddingHorizontal: 6 },
   productCard: {
     backgroundColor: THEME.colors.surface,
-    borderRadius: 20,
+    borderRadius: 22,
     marginBottom: THEME.space.md,
     borderWidth: 1,
     borderColor: THEME.colors.border,
     minHeight: 344,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
+    ...THEME.shadows.soft,
     overflow: 'hidden',
   },
   imageContainer: { height: 164, backgroundColor: THEME.colors.surfaceAlt },
   imageCarouselContainer: { width: '100%', height: '100%', position: 'relative' },
   productImage: { width: '100%', height: '100%' },
   noImage: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: THEME.colors.surfaceAlt },
-  arrowLeft: {
+  carouselArrow: {
     position: 'absolute',
-    left: 6,
     top: '50%',
     transform: [{ translateY: -16 }],
-    backgroundColor: 'rgba(31,42,31,0.45)',
+    backgroundColor: 'rgba(23,49,31,0.5)',
     borderRadius: 16,
-    width: 28,
-    height: 28,
+    width: 30,
+    height: 30,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
   },
-  arrowRight: {
-    position: 'absolute',
-    right: 6,
-    top: '50%',
-    transform: [{ translateY: -16 }],
-    backgroundColor: 'rgba(31,42,31,0.45)',
-    borderRadius: 16,
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
+  carouselArrowLeft: {
+    left: 8,
   },
-  arrowText: { color: '#fff', fontSize: 18, fontWeight: '800', lineHeight: 20 },
+  carouselArrowRight: {
+    right: 8,
+  },
+  arrowText: { fontSize: 0, lineHeight: 0, color: 'transparent' },
   imageIndicatorContainer: { position: 'absolute', bottom: 6, width: '100%', flexDirection: 'row', justifyContent: 'center' },
   imageIndicatorDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.55)', marginHorizontal: 2 },
   imageIndicatorDotActive: { backgroundColor: '#FFFFFF', width: 7, height: 7 },
   productInfo: { paddingHorizontal: THEME.space.md, paddingTop: THEME.space.md, paddingBottom: 12, minHeight: 126 },
-  productName: { fontSize: 15, lineHeight: 20, fontWeight: '800', color: THEME.colors.text, marginBottom: 6, minHeight: 40 },
+  productName: { fontSize: 15, lineHeight: 20, fontWeight: '900', color: THEME.colors.text, marginBottom: 6, minHeight: 40 },
   productCategory: { fontSize: 11, color: THEME.colors.muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.35 },
-  productPrice: { fontSize: 17, fontWeight: '800', color: THEME.colors.accentDark },
+  productPrice: { fontSize: 17, fontWeight: '900', color: THEME.colors.accentDark },
   reviewSummaryContainer: { flexDirection: 'row', alignItems: 'center', minHeight: 18, marginBottom: 10 },
   starRatingContainer: { flexDirection: 'row', alignItems: 'center' },
   starsRow: { flexDirection: 'row', alignItems: 'center' },
-  ratingText: { fontSize: 11, color: THEME.colors.muted, marginLeft: 4, fontWeight: '700' },
+  ratingText: { fontSize: 11, color: THEME.colors.muted, marginLeft: 4, fontWeight: '800' },
   reviewCount: { fontSize: 10, color: THEME.colors.muted, marginLeft: 4 },
   reviewLoader: { alignSelf: 'flex-start' },
-  reviewPlaceholder: { fontSize: 11, fontWeight: '700', color: THEME.colors.muted, textTransform: 'uppercase', letterSpacing: 0.35 },
+  reviewPlaceholder: { fontSize: 11, fontWeight: '800', color: THEME.colors.muted, textTransform: 'uppercase', letterSpacing: 0.35 },
   priceContainer: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', minHeight: 42, marginTop: 2 },
   originalPrice: { fontSize: 12, color: THEME.colors.muted, textDecorationLine: 'line-through', marginRight: 6 },
-  discountedPrice: { width: '100%', marginTop: 4, fontSize: 17, fontWeight: '800', color: THEME.colors.accentDark },
+  discountedPrice: { width: '100%', marginTop: 4, fontSize: 17, fontWeight: '900', color: THEME.colors.accentDark },
   discountBadge: {
     backgroundColor: THEME.colors.saleSoft,
     paddingHorizontal: 6,
@@ -900,7 +1090,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F3D6B8',
   },
-  discountBadgeText: { color: THEME.colors.sale, fontSize: 10, fontWeight: '700' },
+  discountBadgeText: { color: THEME.colors.sale, fontSize: 10, fontWeight: '800' },
   actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -914,7 +1104,7 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F7F4EE',
+    backgroundColor: THEME.colors.surfaceGlow,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: THEME.colors.border,
@@ -927,7 +1117,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.text,
     borderRadius: 14,
   },
-  buyButtonText: { fontSize: 12, fontWeight: '800', color: '#fff', letterSpacing: 0.25 },
+  buyButtonText: { fontSize: 12, fontWeight: '900', color: THEME.colors.white, letterSpacing: 0.25 },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -938,11 +1128,11 @@ const styles = StyleSheet.create({
     borderRadius: THEME.radius.lg,
     borderWidth: 1,
     borderColor: THEME.colors.border,
+    ...THEME.shadows.soft,
   },
   emptyText: { fontSize: 18, fontWeight: '800', color: THEME.colors.text, marginTop: 15, marginBottom: 6 },
   emptySubtext: { fontSize: 14, color: THEME.colors.muted, textAlign: 'center', lineHeight: 20 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(31,42,31,0.45)', justifyContent: 'flex-start', paddingTop: 120 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(31,42,31,0.45)', justifyContent: 'flex-start', paddingTop: 120 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(23,49,31,0.38)', justifyContent: 'flex-start', paddingTop: 120 },
   categoriesDropdown: {
     backgroundColor: THEME.colors.surface,
     borderRadius: THEME.radius.md,
@@ -950,15 +1140,11 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.border,
     marginHorizontal: THEME.space.lg,
     maxHeight: 420,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    ...THEME.shadows.medium,
   },
   categoriesTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: THEME.colors.text,
     paddingHorizontal: THEME.space.md,
     paddingTop: THEME.space.md,
@@ -978,7 +1164,7 @@ const styles = StyleSheet.create({
   },
   selectedCategoryItem: { backgroundColor: THEME.colors.accentSoft },
   categoryItemText: { fontSize: 15, color: THEME.colors.text },
-  selectedCategoryItemText: { color: THEME.colors.accentDark, fontWeight: '700' },
+  selectedCategoryItemText: { color: THEME.colors.accentDark, fontWeight: '800' },
 });
 
 

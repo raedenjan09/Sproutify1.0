@@ -196,7 +196,7 @@ const Profile = ({ navigation }) => {
     }
   };
 
-  const pickImage = async () => {
+  const pickImageFromLibrary = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -219,6 +219,52 @@ const Profile = ({ navigation }) => {
       console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to open your gallery');
     }
+  };
+
+  const captureImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please allow camera access to take a profile photo');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadAvatar(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error capturing image:', error);
+      Alert.alert('Error', 'Failed to open your camera');
+    }
+  };
+
+  const handleAvatarPress = () => {
+    if (uploadingImage) {
+      return;
+    }
+
+    if (Platform.OS === 'web') {
+      pickImageFromLibrary();
+      return;
+    }
+
+    Alert.alert(
+      'Update Profile Picture',
+      'Choose how you want to update your profile picture.',
+      [
+        { text: 'Take Photo', onPress: captureImage },
+        { text: 'Choose from Library', onPress: pickImageFromLibrary },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
   };
 
   const uploadAvatar = async (imageUri) => {
@@ -354,7 +400,7 @@ const Profile = ({ navigation }) => {
             <View style={styles.heroRow}>
               <TouchableOpacity
                 style={styles.avatarContainer}
-                onPress={pickImage}
+                onPress={handleAvatarPress}
                 disabled={uploadingImage}
                 activeOpacity={0.9}
               >
@@ -381,6 +427,7 @@ const Profile = ({ navigation }) => {
                 <Text style={styles.userMetaLine}>
                   {providerLabel} {user?.isVerified ? '· Verified' : '· Not verified'}
                 </Text>
+                <Text style={styles.avatarHint}>Tap your photo to use the camera or your gallery.</Text>
               </View>
             </View>
 
@@ -696,6 +743,12 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 12,
     color: THEME.colors.muted,
+    fontWeight: '600',
+  },
+  avatarHint: {
+    marginTop: 8,
+    fontSize: 12,
+    color: THEME.colors.accentDark,
     fontWeight: '600',
   },
   heroActions: {

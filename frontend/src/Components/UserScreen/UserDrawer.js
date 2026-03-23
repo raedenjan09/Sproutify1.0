@@ -16,22 +16,24 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getUser, logout } from '../../utils/helper';
+import gardenTheme from '../../theme/gardenTheme';
 
 const THEME = {
   colors: {
-    bg: '#F5F3EE',
-    surface: '#FFFFFF',
-    surfaceAlt: '#F0F6F0',
-    text: '#1F2A1F',
-    muted: '#6B7C6A',
-    border: '#E6E0D9',
-    accentDark: '#1B5E20',
-    danger: '#C62828',
+    bg: gardenTheme.colors.canvas,
+    surface: gardenTheme.colors.surface,
+    surfaceAlt: gardenTheme.colors.accentGlow,
+    text: gardenTheme.colors.textStrong,
+    muted: gardenTheme.colors.muted,
+    border: gardenTheme.colors.border,
+    accentDark: gardenTheme.colors.accentStrong,
+    danger: gardenTheme.colors.danger,
+    overlay: gardenTheme.colors.overlay,
   },
   radius: {
-    md: 16,
-    lg: 20,
-    pill: 999,
+    md: gardenTheme.radii.md,
+    lg: gardenTheme.radii.lg,
+    pill: gardenTheme.radii.pill,
   },
 };
 
@@ -238,7 +240,7 @@ const UserDrawer = ({ children }) => {
           <Ionicons
             name={isActive ? tab.activeIcon : tab.icon}
             size={20}
-            color={isActive ? THEME.colors.text : THEME.colors.muted}
+            color={isActive ? THEME.colors.accentDark : THEME.colors.muted}
           />
         </View>
         <Text style={[styles.tabLabel, isActive && styles.activeTabLabel]}>
@@ -275,7 +277,7 @@ const UserDrawer = ({ children }) => {
           {item.label}
         </Text>
         {!item.isLogout && (
-          <Ionicons name="chevron-forward" size={18} color="#999" />
+          <Ionicons name="chevron-forward" size={18} color={THEME.colors.muted} />
         )}
       </TouchableOpacity>
     );
@@ -338,11 +340,13 @@ const UserDrawer = ({ children }) => {
                       <View style={styles.userDetails}>
                         {loading ? (
                           <>
+                            <Text style={styles.drawerEyebrow}>Garden menu</Text>
                             <Text style={styles.userName}>Loading...</Text>
                             <Text style={styles.userEmail}>Please wait</Text>
                           </>
                         ) : (
                           <>
+                            <Text style={styles.drawerEyebrow}>Garden menu</Text>
                             <Text style={styles.userName}>{user?.name || 'User'}</Text>
                             <Text style={styles.userEmail}>{user?.email || 'user@email.com'}</Text>
                           </>
@@ -350,7 +354,7 @@ const UserDrawer = ({ children }) => {
                       </View>
                     </View>
                     <TouchableOpacity onPress={hideDrawer} style={styles.closeButton}>
-                      <Ionicons name="close" size={24} color="#666" />
+                      <Ionicons name="close" size={22} color={THEME.colors.text} />
                     </TouchableOpacity>
                   </View>
 
@@ -376,7 +380,7 @@ const UserDrawer = ({ children }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.surface,
+    backgroundColor: THEME.colors.bg,
   },
   content: {
     flex: 1,
@@ -388,7 +392,7 @@ const styles = StyleSheet.create({
   tabBarContainer: {
     backgroundColor: 'transparent',
     paddingHorizontal: 14,
-    paddingTop: 8,
+    paddingTop: 6,
     paddingBottom: Platform.OS === 'ios' ? 18 : 12,
   },
   tabBar: {
@@ -401,11 +405,7 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.border,
     paddingHorizontal: 8,
     paddingVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    ...gardenTheme.shadows.soft,
   },
   tabItem: {
     minHeight: 46,
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
   },
   drawerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: THEME.colors.overlay,
   },
   drawerContainer: {
     position: 'absolute',
@@ -444,12 +444,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: DRAWER_WIDTH,
     backgroundColor: THEME.colors.surface,
+    borderLeftWidth: 1,
+    borderLeftColor: THEME.colors.border,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: gardenTheme.colors.shadow,
         shadowOffset: { width: -2, height: 0 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
+        shadowOpacity: 0.18,
+        shadowRadius: 10,
       },
       android: {
         elevation: 8,
@@ -467,6 +469,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: THEME.colors.border,
+    backgroundColor: THEME.colors.surfaceAlt,
   },
   userInfo: {
     flexDirection: 'row',
@@ -477,10 +480,18 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: THEME.colors.text,
+    backgroundColor: THEME.colors.accentDark,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+  },
+  drawerEyebrow: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: THEME.colors.accentDark,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 3,
   },
   avatarText: {
     color: '#fff',
@@ -492,7 +503,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '800',
     color: THEME.colors.text,
     marginBottom: 2,
   },
@@ -501,7 +512,14 @@ const styles = StyleSheet.create({
     color: THEME.colors.muted,
   },
   closeButton: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.surface,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
   },
   drawerItems: {
     flex: 1,
@@ -513,12 +531,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1ECE4',
+    borderBottomColor: THEME.colors.border,
   },
   drawerIconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -526,7 +544,7 @@ const styles = StyleSheet.create({
   drawerItemText: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   drawerFooter: {
     padding: 20,
