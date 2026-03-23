@@ -112,7 +112,6 @@ const ProductImageCarousel = ({ images, onCardPress }) => {
             activeOpacity={0.7}
           >
             <Icon name="chevron-left" size={20} color={THEME.colors.white} />
-            <Text style={styles.arrowText}>‹</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.carouselArrow, styles.carouselArrowRight]}
@@ -120,7 +119,6 @@ const ProductImageCarousel = ({ images, onCardPress }) => {
             activeOpacity={0.7}
           >
             <Icon name="chevron-right" size={20} color={THEME.colors.white} />
-            <Text style={styles.arrowText}>›</Text>
           </TouchableOpacity>
           <View style={styles.imageIndicatorContainer} pointerEvents="none">
             {urls.map((_, i) => (
@@ -1063,7 +1061,6 @@ const styles = StyleSheet.create({
   carouselArrowRight: {
     right: 8,
   },
-  arrowText: { fontSize: 0, lineHeight: 0, color: 'transparent' },
   imageIndicatorContainer: { position: 'absolute', bottom: 6, width: '100%', flexDirection: 'row', justifyContent: 'center' },
   imageIndicatorDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.55)', marginHorizontal: 2 },
   imageIndicatorDotActive: { backgroundColor: '#FFFFFF', width: 7, height: 7 },
