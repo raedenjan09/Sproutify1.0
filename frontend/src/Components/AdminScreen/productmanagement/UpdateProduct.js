@@ -17,6 +17,10 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { getToken } from '../../../utils/helper';
+import {
+  PRODUCT_CATEGORIES,
+  isProductCategoryCurrent,
+} from '../../../utils/productCategories';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 import AdminDrawer from '../AdminDrawer';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -52,6 +56,8 @@ const UpdateProductContent = React.memo(({
   setShowStartDatePicker,
   showEndDatePicker,
   setShowEndDatePicker,
+  legacyCategory,
+  handleCategorySelect,
   handleSubmit,
   pickImage,
   removeExistingImage,
@@ -101,16 +107,6 @@ const UpdateProductContent = React.memo(({
     const supplier = suppliers.find(s => s._id === formData.supplier);
     return supplier ? supplier.name : 'No Supplier';
   }, [formData.supplier, suppliers]);
-
-  const categories = [
-    'Pet Food',
-    'Pet Accessories',
-    'Pet Toys',
-    'Health & Wellness',
-    'Grooming Supplies',
-    'Feeding Supplies',
-    'Housing & Cages',
-  ];
 
   const onStartDateChange = (event, selectedDate) => {
     setShowStartDatePicker(false);
@@ -171,10 +167,19 @@ const UpdateProductContent = React.memo(({
           onPress={() => setShowCategoryModal(true)}
         >
           <Text style={formData.category ? styles.pickerTextSelected : styles.pickerText}>
-            {formData.category || 'Select a category'}
+            {formData.category || (legacyCategory ? 'Choose a new garden category' : 'Select a category')}
           </Text>
           <Icon name="arrow-drop-down" size={24} color="#666" />
         </TouchableOpacity>
+
+        {legacyCategory ? (
+          <View style={styles.legacyCategoryNotice}>
+            <Text style={styles.legacyCategoryTitle}>Legacy category detected</Text>
+            <Text style={styles.legacyCategoryText}>
+              This product still uses the old pet-shop category "{legacyCategory}". Select one of the new garden categories before saving.
+            </Text>
+          </View>
+        ) : null}
 
         <Text style={styles.label}>Supplier</Text>
         <TouchableOpacity
@@ -377,7 +382,7 @@ const UpdateProductContent = React.memo(({
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Category</Text>
             <FlatList
-              data={categories}
+              data={PRODUCT_CATEGORIES}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -386,7 +391,7 @@ const UpdateProductContent = React.memo(({
                     formData.category === item && styles.categoryItemSelected,
                   ]}
                   onPress={() => {
-                    handleInputChange('category', item);
+                    handleCategorySelect(item);
                     setShowCategoryModal(false);
                   }}
                 >
@@ -499,6 +504,7 @@ export default function UpdateProductScreen({ navigation, route }) {
   const [suppliers, setSuppliers] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
+  const [legacyCategory, setLegacyCategory] = useState('');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [showDiscountSection, setShowDiscountSection] = useState(false);
@@ -518,13 +524,25 @@ export default function UpdateProductScreen({ navigation, route }) {
     discountEndDate: null,
   });
 
+  const handleCategorySelect = useCallback((category) => {
+    setFormData(prev => ({
+      ...prev,
+      category,
+    }));
+    setLegacyCategory('');
+  }, []);
+
   useEffect(() => {
     if (product) {
+      const incomingCategory = product.category || '';
+      const hasLegacyCategory =
+        incomingCategory && !isProductCategoryCurrent(incomingCategory);
+
       setFormData({
         name: product.name || '',
         price: product.price?.toString() || '',
         description: product.description || '',
-        category: product.category || '',
+        category: hasLegacyCategory ? '' : incomingCategory,
         supplier: product.supplier?._id || '',
         stock: product.stock?.toString() || '',
         discountedPrice: product.discountedPrice?.toString() || '',
@@ -532,6 +550,7 @@ export default function UpdateProductScreen({ navigation, route }) {
         discountStartDate: product.discountStartDate ? new Date(product.discountStartDate) : null,
         discountEndDate: product.discountEndDate ? new Date(product.discountEndDate) : null,
       });
+      setLegacyCategory(hasLegacyCategory ? incomingCategory : '');
       setExistingImages(product.images || []);
       
       // Check if product has discount data
@@ -624,7 +643,12 @@ export default function UpdateProductScreen({ navigation, route }) {
       return false;
     }
     if (!formData.category) {
-      Alert.alert('Validation Error', 'Please select a category');
+      Alert.alert(
+        'Validation Error',
+        legacyCategory
+          ? `This product is still using the legacy category "${legacyCategory}". Please select a new garden category before saving.`
+          : 'Please select a category'
+      );
       return false;
     }
     if (!formData.stock || parseInt(formData.stock) < 0) {
@@ -805,6 +829,8 @@ export default function UpdateProductScreen({ navigation, route }) {
         setShowStartDatePicker={setShowStartDatePicker}
         showEndDatePicker={showEndDatePicker}
         setShowEndDatePicker={setShowEndDatePicker}
+        legacyCategory={legacyCategory}
+        handleCategorySelect={handleCategorySelect}
         handleSubmit={handleSubmit}
         pickImage={pickImage}
         removeExistingImage={removeExistingImage}
@@ -862,6 +888,26 @@ const styles = StyleSheet.create({
   pickerTextSelected: {
     fontSize: 16,
     color: '#2c3e50',
+  },
+  legacyCategoryNotice: {
+    backgroundColor: '#FFF4E5',
+    borderWidth: 1,
+    borderColor: '#F3D6B8',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: -6,
+    marginBottom: 15,
+  },
+  legacyCategoryTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#B45309',
+    marginBottom: 4,
+  },
+  legacyCategoryText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#8A5B13',
   },
   discountHeader: {
     flexDirection: 'row',

@@ -1,5 +1,5 @@
-// PetShop/backend/models/Product.js
 const mongoose = require('mongoose')
+const { PRODUCT_CATEGORIES } = require('../utils/productCategories');
 
 const productSchema = new mongoose.Schema({
     name: {
@@ -60,16 +60,8 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please select category for this product'],
         enum: {
-            values: [
-                'Pet Food',
-                'Pet Accessories',
-                'Pet Toys',
-                'Health & Wellness',
-                'Grooming Supplies',
-                'Feeding Supplies',
-                'Housing & Cages'
-            ],
-            message: 'Please select correct category for product'
+            values: PRODUCT_CATEGORIES,
+            message: 'Please select a valid garden category for this product'
         }
     },
     supplier: {

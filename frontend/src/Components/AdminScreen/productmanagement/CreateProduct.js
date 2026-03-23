@@ -16,6 +16,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { getToken } from '../../../utils/helper';
+import { PRODUCT_CATEGORIES } from '../../../utils/productCategories';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 import AdminDrawer from '../AdminDrawer';
 
@@ -60,16 +61,6 @@ const CreateProductContent = React.memo(({
     const supplier = suppliers.find(s => s._id === formData.supplier);
     return supplier ? supplier.name : 'No Supplier';
   }, [formData.supplier, suppliers]);
-
-  const categories = [
-    'Pet Food',
-    'Pet Accessories',
-    'Pet Toys',
-    'Health & Wellness',
-    'Grooming Supplies',
-    'Feeding Supplies',
-    'Housing & Cages',
-  ];
 
   return (
     <ScrollView style={styles.container}>
@@ -197,7 +188,7 @@ const CreateProductContent = React.memo(({
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Category</Text>
             <FlatList
-              data={categories}
+              data={PRODUCT_CATEGORIES}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <TouchableOpacity
